@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>실거주 아카이브</title>
+<title>집속사정</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <style>
@@ -530,7 +530,7 @@
         <circle cx="7.5" cy="14.3" r="0.9" fill="#ffffff"/>
         <path d="M4.2 19.5 Q6.5 21.5 9.5 20.3" stroke="#33424c" stroke-width="1.3" fill="none" stroke-linecap="round"/>
       </svg>
-      <span>우럭 거주 아카이브</span>
+      <span>집속사정</span>
     </a>
     <div class="nav-actions">
       <span id="unlock-badge" class="unlocked-badge" hidden>🔓 상세 열람 가능</span>
@@ -1795,7 +1795,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       '<div class="section-h" style="margin-top:30px"><h3>🏠 새로운 집 제보하기</h3></div>' +
       '<p class="intro" style="margin-top:6px">아직 등록되지 않은 집이 있다면 새로 제보를 남겨보세요.</p>' +
       '<a class="btn primary" href="#/submit">새로운 집 제보하기</a>' +
-      '<div class="section-h" style="margin-top:30px"><h3>내가 남긴 제보 (<span id="my-report-count">0</span>건)</h3></div>' +
+      '<div class="section-h" style="margin-top:30px"><h3>📝 내 제보 기록 (<span id="my-report-count">0</span>건)</h3></div>' +
       '<div id="my-report-list" class="r-list"><p class="intro">불러오는 중...</p></div>';
 
     document.getElementById("profile-name").value = currentUser.displayName || "";
@@ -1810,44 +1810,78 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
 
     var myReportListEl = document.getElementById("my-report-list");
     var myCountEl = document.getElementById("my-report-count");
-    var q = db.collectionGroup("reports").where("authorUid", "==", currentUser.uid);
-    q.get().then(function (snap) {
-      myCountEl.textContent = snap.size;
-      if (snap.empty) {
-        myReportListEl.innerHTML = '<div class="empty">아직 남긴 제보가 없어요.</div>';
+    var myUid = currentUser.uid;
+
+    function myPriceText(r) {
+      var dt = r.dealType || "월세";
+      if (dt === "전세") return ["전세금", fmtWon(r.jeonseAmount)];
+      if (dt === "매매") return ["매매가", fmtWon(r.saleAmount)];
+      return ["보증금 / 월세", fmtWon(r.deposit) + " / " + fmtWon(r.rent)];
+    }
+    function myVerifyBadge(r) {
+      var v = r.verification && r.verification.status;
+      if (v === "verified") return '<span class="tag" style="background:var(--ok-soft);color:var(--ok)">✅ 계약서 인증 완료</span>';
+      if (v === "pending") return '<span class="tag" style="background:var(--surface-2);color:var(--ink-muted)">🕒 인증 대기 중</span>';
+      if (v === "rejected") return '<span class="tag" style="background:var(--warn-soft);color:var(--warn)">인증 반려</span>';
+      return "";
+    }
+
+    // 건물마다 "내가 쓴 제보"만 골라서 가져온다.
+    // (전체 건물 제보를 한 번에 뒤지는 collectionGroup 방식은 Firestore 콘솔에서 색인을 따로
+    //  만들어야 동작해서, 추가 설정 없이 바로 되는 건물별 조회 방식을 쓴다.)
+    db.collection("buildings").get().then(function (bSnap) {
+      return Promise.all(bSnap.docs.map(function (bd) {
+        return db.collection("buildings/" + bd.id + "/reports").where("authorUid", "==", myUid).get().then(function (rSnap) {
+          return rSnap.docs.map(function (d) {
+            return { building: Object.assign({ _id: bd.id }, bd.data()), reportId: d.id, r: d.data() };
+          });
+        }).catch(function () { return []; });
+      }));
+    }).then(function (lists) {
+      if (!document.body.contains(myReportListEl)) return; // 그 사이 다른 페이지로 이동한 경우
+      var rows = [].concat.apply([], lists);
+      myCountEl.textContent = rows.length;
+      if (!rows.length) {
+        myReportListEl.innerHTML =
+          '<div class="empty">아직 남긴 제보가 없어요.' +
+            '<div style="margin-top:12px"><a class="btn primary" href="#/submit">첫 제보 남기기</a></div>' +
+          "</div>";
         return;
       }
-      return Promise.all(snap.docs.map(function (d) {
-        var buildingRef = d.ref.parent.parent;
-        return buildingRef.get().then(function (bSnap) {
-          var bData = bSnap.exists ? bSnap.data() : {};
-          var r = d.data();
-          return {
-            buildingId: buildingRef.id,
-            buildingName: bData.name || "삭제된 건물",
-            reportId: d.id,
-            createdAt: r.createdAt,
-            dealType: r.dealType || "월세"
-          };
-        });
-      })).then(function (rows) {
-        rows.sort(function (a, b) { return (b.createdAt || "").localeCompare(a.createdAt || ""); });
-        myReportListEl.innerHTML = rows.map(function (row) {
-          return (
-            '<div class="r-card">' +
-              '<div class="top"><span class="tag">' + esc(row.dealType) + '</span> <b>' + esc(row.buildingName) + "</b>" +
-                '<span class="when" style="float:right">' + esc(fmtDate(row.createdAt)) + "</span></div>" +
-              '<div style="margin-top:10px;display:flex;gap:8px">' +
-                '<a class="btn" href="#/building/' + encodeURIComponent(row.buildingId) + '">건물 보기</a>' +
-                '<a class="btn" href="#/edit/' + encodeURIComponent(row.buildingId) + "/" + encodeURIComponent(row.reportId) + '">제보 수정</a>' +
-              "</div>" +
-            "</div>"
-          );
-        }).join("");
-      });
+      // 계정 기반 열람 권한이 생기기 전에 남긴 제보가 있으면 여기서 권한도 맞춰준다
+      if (!contributedCache) markContributed();
+
+      rows.sort(function (a, b) { return (b.r.createdAt || "").localeCompare(a.r.createdAt || ""); });
+      myReportListEl.innerHTML = rows.map(function (row) {
+        var r = row.r, b = row.building;
+        var extra = [];
+        if (r.unitNumber) extra.push(esc(r.unitNumber));
+        if (r.floor) extra.push(esc(r.floor));
+        if (r.livedPeriod) extra.push("거주 " + esc(r.livedPeriod));
+        return (
+          '<div class="r-card">' +
+            '<div class="top"><span style="display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+              '<span class="tag">' + esc(r.dealType || "월세") + "</span>" +
+              '<span class="tag" style="background:var(--surface-2);color:var(--ink-muted)">' + esc(r.roomType || "기타") + "</span>" +
+              myVerifyBadge(r) +
+            '</span><span class="when">' + esc(fmtDate(r.createdAt)) + "</span></div>" +
+            '<div style="margin-top:10px;font-weight:700">' + esc(b.name || "이름 없는 건물") + "</div>" +
+            '<div style="font-size:0.82rem;color:var(--ink-muted)">' + esc(b.address || "") + (extra.length ? " · " + extra.join(" · ") : "") + "</div>" +
+            '<div class="r-grid" style="margin-top:10px">' +
+              '<span class="k">' + myPriceText(r)[0] + '</span><span class="v">' + esc(myPriceText(r)[1]) + "</span>" +
+              '<span class="k">관리비</span><span class="v">' + fmtWon(r.maintenanceFee) + "</span>" +
+              '<span class="k">난방비 체감</span><span class="v">' + esc(r.heatingFeel || "-") + "</span>" +
+            "</div>" +
+            (r.note ? '<div class="r-note">' + esc(r.note) + "</div>" : "") +
+            '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">' +
+              '<a class="btn" href="#/building/' + encodeURIComponent(b._id) + '">건물 보기</a>' +
+              '<a class="btn" href="#/edit/' + encodeURIComponent(b._id) + "/" + encodeURIComponent(row.reportId) + '">제보 수정</a>' +
+            "</div>" +
+          "</div>"
+        );
+      }).join("");
     }).catch(function (e) {
-      myReportListEl.innerHTML = '<div class="empty">제보 목록을 불러오지 못했어요.' +
-        '<br><span style="font-size:0.78rem">(브라우저 콘솔에 색인 만들기 링크가 떴다면 그걸 눌러서 색인을 먼저 만들어주세요: ' + esc(e && e.message || "") + ')</span></div>';
+      myReportListEl.innerHTML = '<div class="empty">제보 기록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</div>';
     });
 
     function saveProfile() {
