@@ -849,7 +849,61 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   function buildingLatLng(b) {
     if (b && typeof b.lat === "number" && typeof b.lng === "number") return [b.lat, b.lng];
     var id = b && (b.id || b._id);
-    return (id && SEED_COORDS[id]) || null;
+    if (id && SEED_COORDS[id]) return SEED_COORDS[id];
+    var c = id && geoCacheGet(id);
+    return (c && c !== "fail") ? c : null;
+  }
+
+  // ---- 좌표가 없는 건물은 주소로 자동으로 위치를 찾아 채움 ----
+  // 찾은 좌표는 브라우저에 기억해두고, 로그인한 사용자가 보고 있으면 Firestore 건물 정보에도 저장해서
+  // 다음부터는 모두가 바로 지도에서 볼 수 있게 함
+  var GEO_CACHE = {};
+  function geoCacheGet(id) {
+    if (GEO_CACHE[id]) return GEO_CACHE[id];
+    try {
+      var v = JSON.parse(localStorage.getItem("geo:" + id) || "null");
+      if (v && v.ll) { GEO_CACHE[id] = v.ll; return v.ll; }
+      if (v && v.fail && Date.now() - v.t < 6 * 3600 * 1000) { GEO_CACHE[id] = "fail"; return "fail"; }
+    } catch (e) {}
+    return null;
+  }
+  function geoCacheSet(id, ll) {
+    GEO_CACHE[id] = ll || "fail";
+    try { localStorage.setItem("geo:" + id, JSON.stringify(ll ? { ll: ll } : { fail: 1, t: Date.now() })); } catch (e) {}
+  }
+  function addrQueries(b) {
+    var out = [];
+    var road = String(b.roadAddress || "").trim();
+    var addr = String(b.address || "").replace(/\(.*?\)/g, "").replace(/\[\d+\]/g, "").trim();
+    [road, addr].forEach(function (q) {
+      // "광운대 후문 도보 5분" 같은 설명형 주소는 검색하지 않음 (도로명/지번 형태만)
+      if (q && /(로|길)\s*\d|동\s*\d/.test(q) && out.indexOf(q) < 0) out.push(q);
+    });
+    return out;
+  }
+  var geoQueue = [], geoRunning = false, geoListeners = [];
+  function geoPending() { return geoRunning || geoQueue.length > 0; }
+  function queueGeocode(b) {
+    var id = b && (b.id || b._id);
+    if (!id || buildingLatLng(b) || geoCacheGet(id) === "fail") return;
+    for (var i = 0; i < geoQueue.length; i++) if ((geoQueue[i].id || geoQueue[i]._id) === id) return;
+    geoQueue.push(b);
+    runGeoQueue();
+  }
+  function runGeoQueue() {
+    if (geoRunning || !geoQueue.length) return;
+    geoRunning = true;
+    var b = geoQueue.shift(), id = b.id || b._id, qs = addrQueries(b);
+    (qs.length ? geocodeAddress(qs) : Promise.resolve(null)).then(function (ll) {
+      geoCacheSet(id, ll);
+      if (ll && currentUser && db) db.doc("buildings/" + id).update({ lat: ll[0], lng: ll[1] }).catch(function () {});
+      geoListeners.slice().forEach(function (fn) { try { fn(id, ll); } catch (e) {} });
+      setTimeout(function () {
+        geoRunning = false;
+        if (!geoQueue.length) geoListeners.slice().forEach(function (fn) { try { fn(null, null); } catch (e) {} });
+        runGeoQueue();
+      }, qs.length ? 1100 : 0);
+    });
   }
   function shortPrice(b) {
     var d = b.lastDealType || "월세";
@@ -883,9 +937,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   }
   function addBaseTiles(map) {
     map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      subdomains: "abcd", maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
     }).addTo(map);
   }
   function mapLoadErrorHtml() {
@@ -1169,7 +1223,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     syncViewToggle();
 
     // ---- 지도 보기 ----
-    var homeMap = null, markerLayer = null, mapRows = [], mapSelection = null, mapFailed = false, mapFitted = false;
+    var homeMap = null, markerLayer = null, mapRows = [], mapSelection = null, mapFailed = false, mapFitted = false, mapUserMoved = false;
     function ensureHomeMap() {
       if (homeMap) return Promise.resolve(homeMap);
       return loadLeaflet().then(function () {
@@ -1178,6 +1232,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         addBaseTiles(homeMap);
         markerLayer = L.layerGroup().addTo(homeMap);
         homeMap.on("zoomend", drawMarkers);
+        homeMap.on("dragstart", function () { mapUserMoved = true; });
         homeMap.on("moveend", paintMapPanel);
         homeMap.on("click", function () {
           if (mapSelection) { mapSelection = null; drawMarkers(); paintMapPanel(); }
@@ -1220,6 +1275,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
             title: "이 지역 매물 " + g.length + "곳"
           });
           c.on("click", function () {
+            mapUserMoved = true;
             mapSelection = g.map(function (x) { return x.b.id; });
             paintMapPanel();
             var bounds = L.latLngBounds(g.map(function (x) { return x.ll; }));
@@ -1234,7 +1290,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       var noPos = mapRows.length - items.length;
       if (hint) {
         hint.textContent = "둥근 숫자 아이콘을 누르면 그 지역 매물이, 가격 표시를 누르면 해당 매물이 아래에 떠요." +
-          (noPos > 0 ? " (위치 정보가 없는 매물 " + noPos + "곳은 목록 보기에서 확인할 수 있어요)" : "");
+          (noPos > 0
+            ? (geoPending()
+                ? " (주소로 위치를 찾는 중인 매물 " + noPos + "곳)"
+                : " (위치를 못 찾은 매물 " + noPos + "곳은 목록 보기에서 볼 수 있고, 건물 상세 페이지에서 위치를 지정할 수 있어요)")
+            : "");
       }
     }
     function paintMapPanel() {
@@ -1258,8 +1318,18 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         ? rows.map(buildingCardHtml).join("")
         : '<div class="empty" style="margin-top:0">이 영역에는 매물이 없어요. 지도를 움직이거나 확대/축소해보세요.</div>';
     }
+    function fitIfNeeded() {
+      if (!homeMap || mapUserMoved || mapSelection) return;
+      var pts = mapRows.map(buildingLatLng).filter(Boolean);
+      if (pts.length && pts.length !== mapFitted) { mapFitted = pts.length; homeMap.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 16 }); }
+    }
+    var onGeo = function () { if (homeMap) { fitIfNeeded(); drawMarkers(); paintMapPanel(); } };
+    geoListeners.push(onGeo);
+    track(function () { var i = geoListeners.indexOf(onGeo); if (i > -1) geoListeners.splice(i, 1); });
+
     function showMap(rows) {
       mapRows = rows;
+      rows.forEach(queueGeocode);
       if (mapSelection) {
         var ids = rows.map(function (b) { return b.id; });
         mapSelection = mapSelection.filter(function (id) { return ids.indexOf(id) > -1; });
@@ -1269,10 +1339,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       ensureHomeMap().then(function (m) {
         if (!m) return;
         m.invalidateSize();
-        if (!mapFitted) {
-          var pts = rows.map(buildingLatLng).filter(Boolean);
-          if (pts.length) { mapFitted = true; m.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 16 }); }
-        }
+        fitIfNeeded();
         drawMarkers();
         paintMapPanel();
       }).catch(function () {
@@ -1398,7 +1465,23 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         (stats.tags.length ? '<div class="chip-row" style="margin-top:14px">' + stats.tags.map(function (t) {
           return '<span class="chip ' + t.cls + '">' + esc(t.label) + "</span>";
         }).join("") + "</div>" : "") +
-        (buildingLatLng(buildingData) ? '<div id="detail-map" class="map-box"></div>' : "") +
+        (buildingLatLng(buildingData)
+          ? '<div id="detail-map" class="map-box"></div>' +
+            (isAdmin() ? '<div style="text-align:right;margin-top:6px"><button type="button" class="btn ghost" id="loc-set-open" style="font-size:0.8rem">📍 위치 수정</button></div>' : "")
+          : '<div class="banner" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+              "<span>📍 이 건물은 아직 지도 위치가 없어요.</span>" +
+              (currentUser
+                ? '<button type="button" class="btn" id="loc-set-open">지도에서 위치 지정하기</button>'
+                : '<span style="font-size:0.82rem;color:var(--ink-muted)">로그인하면 위치를 지정할 수 있어요</span>') +
+            "</div>") +
+        '<div id="loc-set-box" style="display:none;margin-top:10px">' +
+          '<div class="map-hint" id="loc-set-hint" style="margin-top:0">지도를 눌러 건물 위치를 찍은 뒤 저장해주세요.</div>' +
+          '<div id="loc-set-map" class="map-box" style="height:240px;margin-top:8px"></div>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' +
+            '<button type="button" class="btn" id="loc-set-cancel">취소</button>' +
+            '<button type="button" class="btn primary" id="loc-set-save" disabled>이 위치로 저장</button>' +
+          "</div>" +
+        "</div>" +
         '<div class="section-h"><h3>제보 목록</h3><span style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
           '<button type="button" class="btn ghost" id="detail-report-btn" style="color:var(--warn)">🚩 허위매물 신고</button>' +
           '<a class="btn" href="#/submit/' + encodeURIComponent(buildingData._id) + '">이 건물에 제보하기</a>' +
@@ -1410,8 +1493,58 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       document.getElementById("detail-report-btn").addEventListener("click", function () {
         openReportModal(buildingData._id);
       });
+      var locOpen = document.getElementById("loc-set-open");
+      if (locOpen) locOpen.addEventListener("click", openLocSetter);
       drawDetailMap();
+      queueGeocode(buildingData);
     }
+
+    // ---- 위치 지정 (좌표가 없는 건물) ----
+    var locMap = null, locMarker = null, locLL = null;
+    function openLocSetter() {
+      var box = document.getElementById("loc-set-box");
+      box.style.display = "";
+      loadLeaflet().then(function () {
+        var el = document.getElementById("loc-set-map");
+        if (!el) return;
+        if (locMap) { try { locMap.remove(); } catch (e) {} locMap = null; locMarker = null; }
+        var start = buildingLatLng(buildingData) || WOLGYE_CENTER;
+        locMap = L.map(el, { scrollWheelZoom: false }).setView(start, 16);
+        addBaseTiles(locMap);
+        locMap.on("click", function (ev) {
+          locLL = [ev.latlng.lat, ev.latlng.lng];
+          if (!locMarker) locMarker = L.marker(locLL, { icon: L.divIcon({ className: "mk-wrap", html: '<div class="mk-dot"></div>', iconSize: null }), interactive: false }).addTo(locMap);
+          else locMarker.setLatLng(locLL);
+          document.getElementById("loc-set-save").disabled = false;
+          document.getElementById("loc-set-hint").textContent = "📍 위치를 찍었어요. 맞으면 저장을 눌러주세요.";
+        });
+      }).catch(function () {
+        var el = document.getElementById("loc-set-map");
+        if (el) { el.style.height = "auto"; el.innerHTML = mapLoadErrorHtml(); }
+      });
+      document.getElementById("loc-set-cancel").onclick = function () {
+        box.style.display = "none";
+        if (locMap) { try { locMap.remove(); } catch (e) {} locMap = null; locMarker = null; }
+      };
+      document.getElementById("loc-set-save").onclick = function () {
+        if (!locLL || !currentUser) return;
+        var btn = this;
+        btn.disabled = true; btn.textContent = "저장 중...";
+        db.doc("buildings/" + buildingData._id).update({ lat: locLL[0], lng: locLL[1] }).then(function () {
+          geoCacheSet(buildingData._id, locLL);
+          toast("위치를 저장했어요. 이제 지도에서 보여요.");
+        }).catch(function (e) {
+          btn.disabled = false; btn.textContent = "이 위치로 저장";
+          toast(dbErrorMessage(e));
+        });
+      };
+    }
+    var onGeoDetail = function (gid, ll) { if (ll && buildingData && gid === buildingData._id) paint(); };
+    geoListeners.push(onGeoDetail);
+    track(function () {
+      var i = geoListeners.indexOf(onGeoDetail); if (i > -1) geoListeners.splice(i, 1);
+      if (locMap) { try { locMap.remove(); } catch (e) {} locMap = null; }
+    });
 
     var detailMap = null;
     function drawDetailMap() {
@@ -2241,6 +2374,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
 
   // ---------------- ADMIN (계약서 인증 검토) ----------------
   var ADMIN_EMAILS = (window.__WOLGYE_ADMIN_EMAILS__ || []);
+  function isAdmin() { return !!(currentUser && ADMIN_EMAILS.indexOf(currentUser.email) > -1); }
   function renderAdmin() {
     if (!currentUser) {
       app.innerHTML =
