@@ -82,6 +82,8 @@
     padding-inline: 20px;
   }
   .topbar-inner {
+    max-width: none;
+    padding-inline: 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -90,6 +92,10 @@
   }
   .brand { font-family: 'Gowun Batang', serif; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
   .brand .dot { color: var(--accent); }
+  .auth-pill { display: inline-flex; align-items: center; border: 1px solid #d5d9de; border-radius: 6px; background: var(--surface); padding: 0 4px; height: 40px; }
+  .auth-pill button { border: 0; background: transparent; font-weight: 800; font-size: 0.95rem; color: var(--brand-ink); padding: 0 12px; height: 100%; cursor: pointer; letter-spacing: -0.02em; }
+  .auth-pill button:hover { color: var(--accent-strong); }
+  .auth-sep { width: 1px; height: 14px; background: #d5d9de; }
   .brand-name { color: var(--brand-ink); font-size: 1.3rem; letter-spacing: -0.01em; }
   .brand { flex: 1 1 auto; }
   .brand-tag { flex: 1 1 auto; text-align: center; padding: 0 12px; color: var(--brand-ink); font-family: 'IBM Plex Sans KR','Noto Sans KR',sans-serif; font-size: 0.78rem; font-weight: 600; line-height: 1.25; }
@@ -164,6 +170,12 @@
     box-shadow: inset 0 0 0 1px var(--line);
   }
   .b-thumb svg, .b-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .b-thumb { position: relative; }
+  .sky-thumb { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; background: var(--surface-2); }
+  .sky-thumb.on { opacity: 1; }
+  .sky-thumb img { width: 100% !important; height: 100% !important; object-fit: cover; }
+  .sky-thumb a { pointer-events: none; }
+  .sky-thumb::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #ff6a3d; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.4); z-index: 2; }
   .b-card-main { flex: 1; min-width: 0; padding: 2px 4px 2px 0; }
   .b-card .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   .b-card .name { font-weight: 600; font-size: 1.02rem; }
@@ -1175,13 +1187,43 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     }
     return tryAt(0);
   }
+  // ---- 목록 썸네일: 그 건물 위치를 찍은 카카오 위성사진(스카이뷰). 화면에 보일 때만 불러옴 ----
+  function skyThumbHtml(b) {
+    var ll = buildingLatLng(b);
+    if (!ll || !hasKakaoKey()) return "";
+    return '<div class="sky-thumb" data-lat="' + ll[0] + '" data-lng="' + ll[1] + '"></div>';
+  }
+  var skyObserver = null;
+  function hydrateSkyThumbs(root) {
+    var els = (root || document).querySelectorAll(".sky-thumb:not([data-done])");
+    if (!els.length) return;
+    loadKakao().then(function (kakao) {
+      var K = kakao.maps;
+      function draw(el) {
+        if (el.getAttribute("data-done")) return;
+        el.setAttribute("data-done", "1");
+        try {
+          var pos = new K.LatLng(Number(el.getAttribute("data-lat")), Number(el.getAttribute("data-lng")));
+          new K.StaticMap(el, { center: pos, level: 2, mapTypeId: K.MapTypeId.SKYVIEW });
+          var img = el.querySelector("img");
+          if (img) img.addEventListener("load", function () { el.classList.add("on"); });
+          setTimeout(function () { el.classList.add("on"); }, 1500);
+        } catch (e) { el.remove(); }
+      }
+      if (!("IntersectionObserver" in window)) { Array.prototype.forEach.call(els, draw); return; }
+      if (!skyObserver) skyObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { skyObserver.unobserve(en.target); draw(en.target); } });
+      }, { rootMargin: "200px" });
+      Array.prototype.forEach.call(els, function (el) { skyObserver.observe(el); });
+    }).catch(function () {});
+  }
   function buildingCardHtml(b) {
     var price = lastPriceLine(b);
     var id = b.id || b._id;
     return (
       '<a class="b-card" href="#/building/' + encodeURIComponent(id) + '">' +
         '<div class="b-card-row">' +
-          '<div class="b-thumb">' + buildingMedia(b) + "</div>" +
+          '<div class="b-thumb">' + buildingMedia(b) + skyThumbHtml(b) + "</div>" +
           '<div class="b-card-main">' +
             '<div class="row1">' +
               '<span class="name">' + esc(b.name) + "</span>" +
@@ -1361,8 +1403,14 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         '<button type="button" class="btn ghost" id="logout-btn" style="padding:6px 8px">로그아웃</button>';
       document.getElementById("logout-btn").addEventListener("click", signOutUser);
     } else {
-      el.innerHTML = '<button type="button" class="btn ghost" id="login-btn-top" style="padding:6px 10px">로그인</button>';
-      document.getElementById("login-btn-top").addEventListener("click", openAuthModal);
+      el.innerHTML =
+        '<span class="auth-pill">' +
+          '<button type="button" id="login-btn-top">로그인</button>' +
+          '<span class="auth-sep" aria-hidden="true"></span>' +
+          '<button type="button" id="signup-btn-top">회원가입</button>' +
+        "</span>";
+      document.getElementById("login-btn-top").addEventListener("click", function () { openAuthModal("login"); });
+      document.getElementById("signup-btn-top").addEventListener("click", function () { openAuthModal("signup"); });
     }
   }
 
@@ -1546,6 +1594,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       panel.innerHTML = rows.length
         ? rows.map(buildingCardHtml).join("")
         : '<div class="empty" style="margin-top:0">이 영역에는 매물이 없어요. 지도를 움직이거나 확대/축소해보세요.</div>';
+      hydrateSkyThumbs(panel);
     }
     function fitIfNeeded() {
       if (!homeMap || mapUserMoved || mapSelection) return;
@@ -1641,6 +1690,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         return;
       }
       listEl.innerHTML = rows.map(buildingCardHtml).join("");
+      hydrateSkyThumbs(listEl);
     }
 
     qInput.addEventListener("input", paint);
@@ -3311,8 +3361,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     document.getElementById("auth-submit").textContent = isSignup ? "회원가입" : "로그인";
     document.getElementById("auth-toggle-mode").textContent = isSignup ? "이미 계정이 있으신가요? 로그인" : "계정이 없으신가요? 회원가입";
   }
-  function openAuthModal() {
-    authMode = "login";
+  function openAuthModal(mode) {
+    authMode = mode === "signup" ? "signup" : "login";
     applyAuthModalMode();
     document.getElementById("auth-name").value = "";
     document.getElementById("auth-email").value = "";
