@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -558,6 +558,11 @@
   .mk-pin.sel { background: #2c6cb0; color: #fff; }
   .mk-pin.empty { border-width: 1.5px; border-color: #7f9bb8; color: #33475b; font-weight: 600; font-size: 0.72rem; padding: 3px 8px; }
   .mk-pin.empty.sel { background: #2c6cb0; border-color: #2c6cb0; color: #fff; }
+  .kk-ov { position: relative; }
+  .pk-dot { position: absolute; left: 0; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #7f9bb8; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.35); transform: translate(-50%, -50%); cursor: pointer; }
+  .pk-dot.has { background: #2c6cb0; }
+  .pk-dot.sel { width: 20px; height: 20px; background: #e2721b; }
+  .pk-label { position: absolute; left: 0; top: -16px; transform: translate(-50%, -100%); white-space: nowrap; background: #14263d; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
   .mk-dot { width: 18px; height: 18px; border-radius: 50%; background: #2c6cb0; border: 3px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.35); transform: translate(-50%, -50%); }
 
   /* ---- 허위매물 신고: 매물 선택 ---- */
@@ -991,6 +996,120 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     map.options.maxBoundsViscosity = 0.9;
     map.setMinZoom(14);
   }
+  // ================= 지도 어댑터 =================
+  // 카카오 키가 있으면 카카오맵(네이버/카카오 같은 깔끔한 국내 지도), 없거나 실패하면 Leaflet+OpenStreetMap.
+  // 화면 코드들은 아래 공통 메서드만 씀: fitWolgye, setView, fitPoints, onClick, onIdle, onZoom, onDragStart,
+  // pixel, contains, addHtml, relayout, destroy
+  function createWMap(el, opts) {
+    opts = opts || {};
+    if (hasKakaoKey()) {
+      return loadKakao().then(function (kakao) { return kakaoWMap(kakao, el, opts); })
+        .catch(function () { return loadLeaflet().then(function () { return leafletWMap(el, opts); }); });
+    }
+    return loadLeaflet().then(function () { return leafletWMap(el, opts); });
+  }
+  function levelFromZoom(z) { return Math.max(1, Math.min(7, 19 - z)); }
+
+  function kakaoWMap(kakao, el, opts) {
+    var K = kakao.maps;
+    el.innerHTML = "";
+    var center = opts.center || WOLGYE_CENTER;
+    var map = new K.Map(el, { center: new K.LatLng(center[0], center[1]), level: levelFromZoom(opts.zoom || 15) });
+    map.setMaxLevel(6);
+    if (opts.zoomControl !== false) map.addControl(new K.ZoomControl(), K.ControlPosition.RIGHT);
+    if (opts.draggable === false) map.setDraggable(false);
+    if (opts.zoomable === false) map.setZoomable(false);
+    var ringPath = WOLGYE1_RING.map(function (p) { return new K.LatLng(p[0], p[1]); });
+    var world = [[38.5, 125.5], [38.5, 129.5], [36.5, 129.5], [36.5, 125.5]].map(function (p) { return new K.LatLng(p[0], p[1]); });
+    new K.Polygon({ map: map, path: [world, ringPath], strokeWeight: 0, fillColor: "#33475b", fillOpacity: 0.28 });
+    new K.Polyline({ map: map, path: ringPath.concat([ringPath[0]]), strokeWeight: 3, strokeColor: "#2c6cb0", strokeOpacity: 0.9, strokeStyle: "dash" });
+    var wb = new K.LatLngBounds();
+    ringPath.forEach(function (ll) { wb.extend(ll); });
+    // 월계1동 밖으로 너무 멀리 끌고 가면 다시 안쪽으로 되돌림
+    var padLat = 0.006, padLng = 0.007;
+    var minLat = wb.getSouthWest().getLat() - padLat, maxLat = wb.getNorthEast().getLat() + padLat;
+    var minLng = wb.getSouthWest().getLng() - padLng, maxLng = wb.getNorthEast().getLng() + padLng;
+    K.event.addListener(map, "dragend", function () {
+      var c = map.getCenter(), lat = c.getLat(), lng = c.getLng();
+      var nl = Math.min(maxLat, Math.max(minLat, lat)), ng = Math.min(maxLng, Math.max(minLng, lng));
+      if (nl !== lat || ng !== lng) map.panTo(new K.LatLng(nl, ng));
+    });
+    var overlays = [];
+    var api = {
+      kind: "kakao",
+      fitWolgye: function () { map.setBounds(wb, 12, 12, 12, 12); },
+      setView: function (ll, zoom) { map.setLevel(levelFromZoom(zoom || 16)); map.setCenter(new K.LatLng(ll[0], ll[1])); },
+      fitPoints: function (lls) {
+        var b = new K.LatLngBounds();
+        lls.forEach(function (ll) { b.extend(new K.LatLng(ll[0], ll[1])); });
+        var before = map.getLevel();
+        map.setBounds(b, 60, 60, 60, 60);
+        if (map.getLevel() >= before) map.setLevel(Math.max(1, before - 1), { anchor: b.getCenter() });
+      },
+      onClick: function (fn) { K.event.addListener(map, "click", function (e) { fn(e.latLng.getLat(), e.latLng.getLng()); }); },
+      onIdle: function (fn) { K.event.addListener(map, "idle", fn); },
+      onZoom: function (fn) { K.event.addListener(map, "zoom_changed", fn); },
+      onDragStart: function (fn) { K.event.addListener(map, "dragstart", fn); },
+      pixel: function (ll) { var pt = map.getProjection().containerPointFromCoords(new K.LatLng(ll[0], ll[1])); return [pt.x, pt.y]; },
+      contains: function (ll) { return map.getBounds().contain(new K.LatLng(ll[0], ll[1])); },
+      addHtml: function (ll, html, o) {
+        o = o || {};
+        var wrap = document.createElement("div");
+        wrap.className = "kk-ov";
+        wrap.innerHTML = o.size ? '<div style="transform:translate(-50%,-50%)">' + html + "</div>" : html;
+        if (o.title) wrap.title = o.title;
+        if (o.onClick) {
+          wrap.style.cursor = "pointer";
+          wrap.addEventListener("click", function (ev) { ev.stopPropagation(); o.onClick(); });
+          wrap.addEventListener("touchend", function (ev) { ev.stopPropagation(); });
+        }
+        var ov = new K.CustomOverlay({ position: new K.LatLng(ll[0], ll[1]), content: wrap, xAnchor: 0, yAnchor: 0, zIndex: o.z || 1, clickable: !!o.onClick });
+        ov.setMap(map);
+        var h = { remove: function () { ov.setMap(null); }, setPos: function (p) { ov.setPosition(new K.LatLng(p[0], p[1])); } };
+        overlays.push(h);
+        return h;
+      },
+      relayout: function () { map.relayout(); },
+      destroy: function () { overlays.forEach(function (h) { h.remove(); }); overlays = []; }
+    };
+    return api;
+  }
+
+  function leafletWMap(el, opts) {
+    var center = opts.center || WOLGYE_CENTER;
+    var map = L.map(el, {
+      zoomControl: opts.zoomControl !== false,
+      dragging: opts.draggable !== false,
+      scrollWheelZoom: opts.zoomable !== false && opts.wheel !== false,
+      touchZoom: opts.zoomable !== false, doubleClickZoom: opts.zoomable !== false
+    }).setView(center, opts.zoom || 15);
+    addBaseTiles(map);
+    var api = {
+      kind: "leaflet",
+      fitWolgye: function () { map.fitBounds(wolgye1Bounds().pad(0.03)); },
+      setView: function (ll, zoom) { map.setView(ll, zoom || 16); },
+      fitPoints: function (lls) { map.fitBounds(L.latLngBounds(lls).pad(0.5), { maxZoom: Math.min(18, map.getZoom() + 2) }); },
+      onClick: function (fn) { map.on("click", function (ev) { fn(ev.latlng.lat, ev.latlng.lng); }); },
+      onIdle: function (fn) { map.on("moveend", fn); },
+      onZoom: function (fn) { map.on("zoomend", fn); },
+      onDragStart: function (fn) { map.on("dragstart", fn); },
+      pixel: function (ll) { var pt = map.project(L.latLng(ll[0], ll[1]), map.getZoom()); return [pt.x, pt.y]; },
+      contains: function (ll) { return map.getBounds().contains(ll); },
+      addHtml: function (ll, html, o) {
+        o = o || {};
+        var m = L.marker(ll, {
+          icon: L.divIcon({ className: "mk-wrap", html: html, iconSize: o.size ? [o.size, o.size] : null }),
+          interactive: !!o.onClick, title: o.title || "", zIndexOffset: o.z ? o.z * 100 : 0, keyboard: false
+        }).addTo(map);
+        if (o.onClick) m.on("click", function () { o.onClick(); });
+        return { remove: function () { map.removeLayer(m); }, setPos: function (p) { m.setLatLng(p); } };
+      },
+      relayout: function () { map.invalidateSize(); },
+      destroy: function () { try { map.remove(); } catch (e) {} }
+    };
+    return api;
+  }
+
   function mapLoadErrorHtml() {
     return '<div class="banner" style="margin:0">지도를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해주세요.</div>';
   }
@@ -1313,37 +1432,40 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     syncViewToggle();
 
     // ---- 지도 보기 ----
-    var homeMap = null, markerLayer = null, mapRows = [], mapSelection = null, mapFailed = false, mapFitted = false, mapUserMoved = false;
+    var homeMap = null, homeMarks = [], mapRows = [], mapSelection = null, mapFailed = false, mapFitted = false, mapUserMoved = false, homeMapPromise = null;
     function ensureHomeMap() {
       if (homeMap) return Promise.resolve(homeMap);
-      return loadLeaflet().then(function () {
-        if (!document.getElementById("home-map") || homeMap) return homeMap;
-        homeMap = L.map("home-map", { zoomControl: true }).setView(WOLGYE_CENTER, 15);
-        homeMap.fitBounds(wolgye1Bounds().pad(0.04));
-        addBaseTiles(homeMap);
-        markerLayer = L.layerGroup().addTo(homeMap);
-        homeMap.on("zoomend", drawMarkers);
-        homeMap.on("dragstart", function () { mapUserMoved = true; });
-        homeMap.on("moveend", paintMapPanel);
-        homeMap.on("click", function () {
+      if (homeMapPromise) return homeMapPromise;
+      var el = document.getElementById("home-map");
+      if (!el) return Promise.resolve(null);
+      homeMapPromise = createWMap(el, { zoom: 15 }).then(function (m) {
+        if (!document.getElementById("home-map")) { m.destroy(); return null; }
+        homeMap = m;
+        m.fitWolgye();
+        m.onZoom(drawMarkers);
+        m.onDragStart(function () { mapUserMoved = true; });
+        m.onIdle(paintMapPanel);
+        m.onClick(function () {
           if (mapSelection) { mapSelection = null; drawMarkers(); paintMapPanel(); }
         });
-        track(function () { try { homeMap.remove(); } catch (e) {} homeMap = null; });
-        return homeMap;
+        track(function () { try { m.destroy(); } catch (e) {} homeMap = null; homeMapPromise = null; });
+        return m;
       });
+      return homeMapPromise;
     }
     function drawMarkers() {
       if (!homeMap) return;
-      markerLayer.clearLayers();
+      homeMarks.forEach(function (h) { h.remove(); });
+      homeMarks = [];
       var items = mapRows.map(function (b) {
         var ll = buildingLatLng(b);
-        return ll ? { b: b, ll: L.latLng(ll[0], ll[1]) } : null;
+        return ll ? { b: b, ll: ll } : null;
       }).filter(Boolean);
       // 화면에서 가까이 붙은 매물끼리 묶어서 둥근 아이콘(개수)으로 보여줌
-      var zoom = homeMap.getZoom(), cell = 88, groups = {};
+      var cell = 88, groups = {};
       items.forEach(function (it) {
-        var pt = homeMap.project(it.ll, zoom);
-        var key = Math.floor(pt.x / cell) + ":" + Math.floor(pt.y / cell);
+        var pt = homeMap.pixel(it.ll);
+        var key = Math.floor(pt[0] / cell) + ":" + Math.floor(pt[1] / cell);
         (groups[key] = groups[key] || []).push(it);
       });
       Object.keys(groups).forEach(function (k) {
@@ -1351,32 +1473,29 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         if (g.length === 1) {
           var it = g[0];
           var sel = !!(mapSelection && mapSelection.length === 1 && mapSelection[0] === it.b.id);
-          var m = L.marker(it.ll, {
-            icon: L.divIcon({ className: "mk-wrap", html: it.b.lastReportAt
-              ? '<span class="mk-pin' + (sel ? " sel" : "") + '">' + esc(shortPrice(it.b)) + "</span>"
-              : '<span class="mk-pin empty' + (sel ? " sel" : "") + '">' + esc(shortName(it.b.name)) + "</span>", iconSize: null }),
-            title: it.b.name || "", zIndexOffset: sel ? 1000 : 0
-          });
-          m.on("click", function () { mapSelection = [it.b.id]; drawMarkers(); paintMapPanel(); });
-          markerLayer.addLayer(m);
+          var html = it.b.lastReportAt
+            ? '<span class="mk-pin' + (sel ? " sel" : "") + '">' + esc(shortPrice(it.b)) + "</span>"
+            : '<span class="mk-pin empty' + (sel ? " sel" : "") + '">' + esc(shortName(it.b.name)) + "</span>";
+          homeMarks.push(homeMap.addHtml(it.ll, html, {
+            title: it.b.name || "", z: sel ? 10 : 2,
+            onClick: function () { mapSelection = [it.b.id]; drawMarkers(); paintMapPanel(); }
+          }));
         } else {
           var lat = 0, lng = 0;
-          g.forEach(function (x) { lat += x.ll.lat; lng += x.ll.lng; });
+          g.forEach(function (x) { lat += x.ll[0]; lng += x.ll[1]; });
           var size = Math.min(66, 36 + Math.round(Math.sqrt(g.length) * 6));
-          var c = L.marker(L.latLng(lat / g.length, lng / g.length), {
-            icon: L.divIcon({ className: "mk-wrap", html: '<div class="mk-cluster" style="width:' + size + "px;height:" + size + 'px">' + g.length + "</div>", iconSize: [size, size] }),
-            title: "이 지역 매물 " + g.length + "곳"
-          });
-          c.on("click", function () {
-            mapUserMoved = true;
-            mapSelection = g.map(function (x) { return x.b.id; });
-            paintMapPanel();
-            var bounds = L.latLngBounds(g.map(function (x) { return x.ll; }));
-            homeMap.fitBounds(bounds.pad(0.5), { maxZoom: Math.min(18, homeMap.getZoom() + 2) });
-            var panelH = document.getElementById("map-list-h");
-            if (panelH && window.innerWidth < 700) panelH.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
-          markerLayer.addLayer(c);
+          homeMarks.push(homeMap.addHtml([lat / g.length, lng / g.length],
+            '<div class="mk-cluster" style="width:' + size + "px;height:" + size + 'px">' + g.length + "</div>", {
+            size: size, z: 5, title: "이 지역 건물 " + g.length + "곳",
+            onClick: function () {
+              mapUserMoved = true;
+              mapSelection = g.map(function (x) { return x.b.id; });
+              paintMapPanel();
+              homeMap.fitPoints(g.map(function (x) { return x.ll; }));
+              var panelH = document.getElementById("map-list-h");
+              if (panelH && window.innerWidth < 700) panelH.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }));
         }
       });
       var hint = document.getElementById("map-hint");
@@ -1385,8 +1504,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 이름·가격 표시를 누르면 해당 건물이 아래에 떠요." +
           (noPos > 0
             ? (geoPending()
-                ? " (주소로 위치를 찾는 중인 매물 " + noPos + "곳)"
-                : " (위치를 못 찾은 매물 " + noPos + "곳은 목록 보기에서 볼 수 있고, 건물 상세 페이지에서 위치를 지정할 수 있어요)")
+                ? " (주소로 위치를 찾는 중인 건물 " + noPos + "곳)"
+                : " (위치를 못 찾은 건물 " + noPos + "곳은 목록 보기에서 볼 수 있어요)")
             : "");
       }
     }
@@ -1398,8 +1517,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         rows = mapRows.filter(function (b) { return mapSelection.indexOf(b.id) > -1; });
         title = mapSelection.length === 1 ? "선택한 매물" : "이 지역 매물 " + rows.length + "곳";
       } else {
-        var bounds = homeMap.getBounds();
-        rows = mapRows.filter(function (b) { var ll = buildingLatLng(b); return ll && bounds.contains(ll); });
+        rows = mapRows.filter(function (b) { var ll = buildingLatLng(b); return ll && homeMap.contains(ll); });
         title = "지도에 보이는 매물 " + rows.length + "곳";
       }
       head.innerHTML = "<h3>" + esc(title) + "</h3>" +
@@ -1414,7 +1532,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     function fitIfNeeded() {
       if (!homeMap || mapUserMoved || mapSelection) return;
       var pts = mapRows.map(buildingLatLng).filter(Boolean);
-      if (!mapFitted) { mapFitted = true; homeMap.fitBounds(wolgye1Bounds().pad(0.04)); }
+      if (!mapFitted) { mapFitted = true; homeMap.fitWolgye(); }
     }
     var onGeo = function () { if (homeMap) { fitIfNeeded(); drawMarkers(); paintMapPanel(); } };
     geoListeners.push(onGeo);
@@ -1431,7 +1549,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       if (mapFailed) return;
       ensureHomeMap().then(function (m) {
         if (!m) return;
-        m.invalidateSize();
+        m.relayout();
+        if (!mapUserMoved && !mapSelection) m.fitWolgye();
         fitIfNeeded();
         drawMarkers();
         paintMapPanel();
@@ -1599,21 +1718,22 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
 
     // ---- 위치 지정 (좌표가 없는 건물) ----
     var locMap = null, locMarker = null, locLL = null;
+    function dropLocMap() { if (locMap) { try { locMap.destroy(); } catch (e) {} locMap = null; locMarker = null; } }
     function openLocSetter() {
       var box = document.getElementById("loc-set-box");
       box.style.display = "";
-      loadLeaflet().then(function () {
-        var el = document.getElementById("loc-set-map");
-        if (!el) return;
-        if (locMap) { try { locMap.remove(); } catch (e) {} locMap = null; locMarker = null; }
-        var start = buildingLatLng(buildingData) || WOLGYE_CENTER;
-        locMap = L.map(el, { scrollWheelZoom: false }).setView(start, 16);
-        addBaseTiles(locMap);
-        locMap.on("click", function (ev) {
-          if (!inWolgye1(ev.latlng.lat, ev.latlng.lng)) { toast("월계1동(점선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
-          locLL = [ev.latlng.lat, ev.latlng.lng];
-          if (!locMarker) locMarker = L.marker(locLL, { icon: L.divIcon({ className: "mk-wrap", html: '<div class="mk-dot"></div>', iconSize: null }), interactive: false }).addTo(locMap);
-          else locMarker.setLatLng(locLL);
+      var elL = document.getElementById("loc-set-map");
+      dropLocMap();
+      if (!elL) return;
+      var start = buildingLatLng(buildingData);
+      createWMap(elL, { center: start || WOLGYE_CENTER, zoom: 16, wheel: false }).then(function (m) {
+        locMap = m;
+        if (start) m.setView(start, 16); else m.fitWolgye();
+        m.onClick(function (lat, lng) {
+          if (!inWolgye1(lat, lng)) { toast("월계1동(점선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
+          locLL = [lat, lng];
+          if (!locMarker) locMarker = m.addHtml(locLL, '<div class="mk-dot"></div>', { z: 9 });
+          else locMarker.setPos(locLL);
           document.getElementById("loc-set-save").disabled = false;
           document.getElementById("loc-set-hint").textContent = "📍 위치를 찍었어요. 맞으면 저장을 눌러주세요.";
         });
@@ -1623,7 +1743,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       });
       document.getElementById("loc-set-cancel").onclick = function () {
         box.style.display = "none";
-        if (locMap) { try { locMap.remove(); } catch (e) {} locMap = null; locMarker = null; }
+        dropLocMap();
       };
       document.getElementById("loc-set-save").onclick = function () {
         if (!locLL || !currentUser) return;
@@ -1642,26 +1762,27 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     geoListeners.push(onGeoDetail);
     track(function () {
       var i = geoListeners.indexOf(onGeoDetail); if (i > -1) geoListeners.splice(i, 1);
-      if (locMap) { try { locMap.remove(); } catch (e) {} locMap = null; }
+      dropLocMap();
     });
 
     var detailMap = null;
     function drawDetailMap() {
-      if (detailMap) { try { detailMap.remove(); } catch (e) {} detailMap = null; }
+      if (detailMap) { try { detailMap.destroy(); } catch (e) {} detailMap = null; }
       var ll = buildingLatLng(buildingData);
-      if (!ll || !document.getElementById("detail-map")) return;
-      loadLeaflet().then(function () {
-        var el = document.getElementById("detail-map");
-        if (!el || detailMap) return;
-        detailMap = L.map(el, { zoomControl: false, dragging: !L.Browser.mobile, scrollWheelZoom: false }).setView(ll, 16);
-        addBaseTiles(detailMap);
-        L.marker(ll, { icon: L.divIcon({ className: "mk-wrap", html: '<div class="mk-dot"></div>', iconSize: null }), interactive: false }).addTo(detailMap);
+      var elD = document.getElementById("detail-map");
+      if (!ll || !elD) return;
+      var mobile = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+      createWMap(elD, { center: ll, zoom: 16, zoomControl: false, draggable: !mobile, zoomable: false }).then(function (m) {
+        if (!document.body.contains(elD)) { m.destroy(); return; }
+        detailMap = m;
+        m.setView(ll, 16);
+        m.addHtml(ll, '<div class="mk-dot"></div>', { z: 9 });
       }).catch(function () {
         var el = document.getElementById("detail-map");
         if (el) { el.style.height = "auto"; el.innerHTML = mapLoadErrorHtml(); }
       });
     }
-    track(function () { if (detailMap) { try { detailMap.remove(); } catch (e) {} detailMap = null; } });
+    track(function () { if (detailMap) { try { detailMap.destroy(); } catch (e) {} detailMap = null; } });
 
     function lockBanner(buildingId) {
       return (
@@ -2077,18 +2198,20 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     // ---- 새 건물 위치 지정용 작은 지도 ----
     var nbMap = null, nbMarker = null, nbLatLng = null;
     function ensureNbMap() {
-      if (nbMap) { nbMap.invalidateSize(); return Promise.resolve(nbMap); }
-      return loadLeaflet().then(function () {
-        var el = document.getElementById("nb-map");
-        if (!el || nbMap) return nbMap;
-        nbMap = L.map(el, { scrollWheelZoom: false }).setView(WOLGYE_CENTER, 15);
-        addBaseTiles(nbMap);
-        nbMap.on("click", function (ev) {
-          if (!inWolgye1(ev.latlng.lat, ev.latlng.lng)) { toast("월계1동(점선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
-          setNbLatLng([ev.latlng.lat, ev.latlng.lng]);
+      if (nbMap) { nbMap.relayout(); return Promise.resolve(nbMap); }
+      var el = document.getElementById("nb-map");
+      if (!el) return Promise.resolve(null);
+      return createWMap(el, { zoom: 15, wheel: false }).then(function (m) {
+        if (nbMap) { m.destroy(); return nbMap; }
+        nbMap = m;
+        m.fitWolgye();
+        m.onClick(function (lat, lng) {
+          if (!inWolgye1(lat, lng)) { toast("월계1동(점선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
+          setNbLatLng([lat, lng]);
           document.getElementById("nb-map-hint").textContent = "📍 위치를 지정했어요. 다시 누르면 옮겨져요.";
         });
-        track(function () { try { nbMap.remove(); } catch (e) {} nbMap = null; });
+        if (nbLatLng) setNbLatLng(nbLatLng);
+        track(function () { try { m.destroy(); } catch (e) {} nbMap = null; nbMarker = null; });
         return nbMap;
       }).catch(function () {
         var el = document.getElementById("nb-map");
@@ -2098,11 +2221,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     function setNbLatLng(ll) {
       nbLatLng = ll;
       if (!nbMap) return;
-      if (!nbMarker) {
-        nbMarker = L.marker(ll, { icon: L.divIcon({ className: "mk-wrap", html: '<div class="mk-dot"></div>', iconSize: null }), interactive: false }).addTo(nbMap);
-      } else {
-        nbMarker.setLatLng(ll);
-      }
+      if (!nbMarker) nbMarker = nbMap.addHtml(ll, '<div class="mk-dot"></div>', { z: 9 });
+      else nbMarker.setPos(ll);
     }
     existingBtn.addEventListener("click", function () { setMode("existing"); });
     newBtn.addEventListener("click", function () { setMode("new"); });
@@ -2159,38 +2279,41 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     var pickedBox = document.getElementById("picked-box");
 
     // ---- 지도에서 건물 고르기 ----
-    var pkMap = null, pkLayer = null;
+    var pkMap = null, pkMarks = [], pkLoading = false;
     function ensurePkMap() {
       if (editCtx) return;
-      if (pkMap) { pkMap.invalidateSize(); drawPkMarkers(); return; }
-      loadLeaflet().then(function () {
-        var el = document.getElementById("pk-map");
-        if (!el || pkMap) return;
-        pkMap = L.map(el, { scrollWheelZoom: false }).setView(WOLGYE_CENTER, 15);
-        addBaseTiles(pkMap);
-        pkMap.fitBounds(wolgye1Bounds().pad(0.03));
-        pkLayer = L.layerGroup().addTo(pkMap);
-        track(function () { try { pkMap.remove(); } catch (e) {} pkMap = null; });
+      if (pkMap) { pkMap.relayout(); drawPkMarkers(); return; }
+      if (pkLoading) return;
+      var el = document.getElementById("pk-map");
+      if (!el) return;
+      pkLoading = true;
+      createWMap(el, { zoom: 15, wheel: false }).then(function (m) {
+        pkLoading = false;
+        pkMap = m;
+        m.fitWolgye();
+        track(function () { try { m.destroy(); } catch (e) {} pkMap = null; pkMarks = []; });
         drawPkMarkers();
       }).catch(function () {
+        pkLoading = false;
         var el = document.getElementById("pk-map");
         if (el) { el.style.height = "auto"; el.innerHTML = mapLoadErrorHtml(); }
       });
     }
     function drawPkMarkers() {
-      if (!pkMap || !pkLayer) return;
-      pkLayer.clearLayers();
+      if (!pkMap) return;
+      pkMarks.forEach(function (h) { h.remove(); });
+      pkMarks = [];
       allBuildings.forEach(function (b) {
         var ll = buildingLatLng(b);
         if (!ll) return;
         var sel = !!(picked && picked.id === b.id);
-        var m = L.circleMarker(ll, {
-          radius: sel ? 9 : 6, weight: 2, color: "#ffffff",
-          fillColor: sel ? "#e2721b" : (b.lastReportAt ? "#2c6cb0" : "#6f8fb0"), fillOpacity: 0.95
-        });
-        m.bindTooltip(esc(b.name || "건물") + (b.lastReportAt ? "" : " · 제보 없음"), { direction: "top", offset: [0, -6] });
-        m.on("click", function () { picked = b; renderPicked(); drawPkMarkers(); });
-        pkLayer.addLayer(m);
+        pkMarks.push(pkMap.addHtml(ll,
+          '<span class="pk-dot' + (sel ? " sel" : (b.lastReportAt ? " has" : "")) + '"></span>' +
+          (sel ? '<span class="pk-label">' + esc(b.name || "건물") + "</span>" : ""), {
+          z: sel ? 10 : 2,
+          title: (b.name || "건물") + (b.lastReportAt ? "" : " · 제보 없음"),
+          onClick: function () { picked = b; renderPicked(); }
+        }));
       });
     }
     function renderPicked() {
