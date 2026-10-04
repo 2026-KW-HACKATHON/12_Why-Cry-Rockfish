@@ -175,6 +175,9 @@
   .sky-thumb.on { opacity: 1; }
   .sky-thumb img { width: 100% !important; height: 100% !important; object-fit: cover; }
   .sky-thumb a { pointer-events: none; }
+  .sky-thumb.rv::after { display: none; }
+  .sky-thumb * { pointer-events: none !important; }
+  .sky-thumb [id^="_box_util_"], .sky-thumb [id^="_al_"], .sky-thumb [id^="_il_"] { display: none !important; }
   .sky-thumb::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #ff6a3d; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.4); z-index: 2; }
   .b-card-main { flex: 1; min-width: 0; padding: 2px 4px 2px 0; }
   .b-card .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -1193,28 +1196,60 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     if (!ll || !hasKakaoKey()) return "";
     return '<div class="sky-thumb" data-lat="' + ll[0] + '" data-lng="' + ll[1] + '"></div>';
   }
-  var skyObserver = null;
+  // 로드뷰 썸네일: 화면에 보이는 카드에만 작은 로드뷰를 띄우고(건물 쪽을 바라보게), 화면에서 멀어지면 내려서
+  // 브라우저 부담(동시에 띄우는 개수)을 줄임. 근처에 로드뷰가 없으면 위성사진으로 대신 보여줌
+  var thumbObserver = null, panoCache = {};
+  function bearingDeg(fromLat, fromLng, toLat, toLng) {
+    var y1 = fromLat * Math.PI / 180, y2 = toLat * Math.PI / 180, dl = (toLng - fromLng) * Math.PI / 180;
+    var b = Math.atan2(Math.sin(dl) * Math.cos(y2), Math.cos(y1) * Math.sin(y2) - Math.sin(y1) * Math.cos(y2) * Math.cos(dl)) * 180 / Math.PI;
+    return (b + 360) % 360;
+  }
   function hydrateSkyThumbs(root) {
-    var els = (root || document).querySelectorAll(".sky-thumb:not([data-done])");
+    var els = (root || document).querySelectorAll(".sky-thumb:not([data-obs])");
     if (!els.length) return;
     loadKakao().then(function (kakao) {
       var K = kakao.maps;
-      function draw(el) {
-        if (el.getAttribute("data-done")) return;
-        el.setAttribute("data-done", "1");
-        try {
-          var pos = new K.LatLng(Number(el.getAttribute("data-lat")), Number(el.getAttribute("data-lng")));
-          new K.StaticMap(el, { center: pos, level: 2, mapTypeId: K.MapTypeId.SKYVIEW });
-          var img = el.querySelector("img");
-          if (img) img.addEventListener("load", function () { el.classList.add("on"); });
-          setTimeout(function () { el.classList.add("on"); }, 1500);
-        } catch (e) { el.remove(); }
+      function unload(el) {
+        if (!el.getAttribute("data-live")) return;
+        el.removeAttribute("data-live");
+        el.classList.remove("on");
+        el.innerHTML = "";
       }
-      if (!("IntersectionObserver" in window)) { Array.prototype.forEach.call(els, draw); return; }
-      if (!skyObserver) skyObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { if (en.isIntersecting) { skyObserver.unobserve(en.target); draw(en.target); } });
-      }, { rootMargin: "200px" });
-      Array.prototype.forEach.call(els, function (el) { skyObserver.observe(el); });
+      function draw(el) {
+        if (el.getAttribute("data-live")) return;
+        el.setAttribute("data-live", "1");
+        var lat = Number(el.getAttribute("data-lat")), lng = Number(el.getAttribute("data-lng"));
+        var pos = new K.LatLng(lat, lng), key = lat.toFixed(6) + "," + lng.toFixed(6);
+        function withPano(panoId) {
+          if (!el.getAttribute("data-live")) return;
+          try {
+            if (panoId) {
+              var rv = new K.Roadview(el);
+              rv.setPanoId(panoId, pos);
+              K.event.addListener(rv, "init", function () {
+                var from = rv.getPosition();
+                rv.setViewpoint(new K.Viewpoint(bearingDeg(from.getLat(), from.getLng(), lat, lng), 3, -1));
+                el.classList.add("on");
+              });
+              el.classList.add("rv");
+            } else {
+              new K.StaticMap(el, { center: pos, level: 2, mapTypeId: K.MapTypeId.SKYVIEW });
+              el.classList.add("sky");
+              setTimeout(function () { el.classList.add("on"); }, 400);
+            }
+          } catch (e) { unload(el); }
+        }
+        if (key in panoCache) withPano(panoCache[key]);
+        else new K.RoadviewClient().getNearestPanoId(pos, 50, function (panoId) { panoCache[key] = panoId || null; withPano(panoId); });
+      }
+      if (!("IntersectionObserver" in window)) { Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); draw(el); }); return; }
+      if (!thumbObserver) thumbObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!document.body.contains(en.target)) { thumbObserver.unobserve(en.target); return; }
+          if (en.isIntersecting) draw(en.target); else unload(en.target);
+        });
+      }, { rootMargin: "150px 0px" });
+      Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); thumbObserver.observe(el); });
     }).catch(function () {});
   }
   function buildingCardHtml(b) {
