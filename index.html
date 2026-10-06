@@ -1360,6 +1360,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     return out;
   }
   function rtDealPrice(d) { return d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + "/" + d.r : d.type + " " + bigWon(d.a); }
+  function rtArea(a) { a = Number(a); return a ? a + "㎡(" + (Math.round(a / 3.3058 * 10) / 10) + "평)" : ""; }
   function rtFloor(f) { f = Number(f); return !f ? "" : f < 0 ? "지하" + (-f) + "층" : f + "층"; }
   function rtEstPrice(b) {
     var s = b && (b.rt || b.rtRoad);
@@ -1378,15 +1379,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     function tile(label, d) {
       if (!d) return "";
       var v = d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + " / " + d.r : fmtWon(d.a);
-      var meta = [String(d.date).replace(/-/g, "."), d.area ? d.area + "㎡" : "", rtFloor(d.floor)].filter(Boolean).join(" · ");
-      return '<div class="rt-tile"><div class="k">' + label + '</div><div class="v">' + esc(v) + '</div><div class="s">' + esc(meta) + "</div></div>";
+      var meta = [String(d.date).replace(/-/g, "."), rtArea(d.area), rtFloor(d.floor)].filter(Boolean).map(function (x) { return '<span style="white-space:nowrap">' + esc(x) + "</span>"; }).join(" · ");
+      return '<div class="rt-tile"><div class="k">' + label + '</div><div class="v">' + esc(v) + '</div><div class="s">' + meta + "</div></div>";
     }
     var tiles = tile("최근 월세", L.wol) + tile("최근 전세", L.jeon) + tile("최근 매매", L.sale) +
       '<div class="rt-tile"><div class="k">최근 업데이트</div><div class="v">' + esc(String(s.lastDate || "-").replace(/-/g, ".")) + '</div><div class="s">계약일 기준</div></div>';
     var rec = (s.recent || []).map(function (d) {
       var cls = d.type === "전세" ? " j" : d.type === "매매" ? " s" : "";
       var price = d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + "/" + d.r : bigWon(d.a);
-      var meta = [d.area ? d.area + "㎡" : "", rtFloor(d.floor)].filter(Boolean).join(" · ");
+      var meta = [rtArea(d.area), rtFloor(d.floor)].filter(Boolean).join(" · ");
       return '<div class="rr"><span class="d">' + esc(String(d.date).replace(/-/g, ".")) + '</span><span class="t' + cls + '">' + esc(d.type) + '</span><span class="p">' + esc(price) + '</span><span class="m">' + esc(meta) + "</span></div>";
     }).join("");
     return (
