@@ -592,6 +592,35 @@
     .fab-btn .ic { font-size: 1rem; }
   }
 
+
+  /* ---- AI 도우미 챗봇 ---- */
+  .ai-fab { position: fixed; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 1100; display: flex; align-items: center; gap: 7px; border: 0; cursor: pointer; color: #fff; font: inherit; font-weight: 800; font-size: 0.88rem; padding: 12px 16px; border-radius: 999px; background: linear-gradient(135deg, #7c5cc4, #4f9bd9); box-shadow: 0 8px 22px -8px rgba(60,40,140,.65); }
+  .ai-fab:hover { transform: translateY(-2px); }
+  .ai-panel { position: fixed; left: 16px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 1200; width: 380px; max-width: calc(100vw - 32px); height: min(560px, calc(100vh - 110px)); background: var(--surface, #fff); border: 1px solid var(--line, #ddd); border-radius: 18px; box-shadow: 0 24px 60px -20px rgba(30,20,70,.55); display: none; flex-direction: column; overflow: hidden; }
+  .ai-panel.open { display: flex; }
+  .ai-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; color: #fff; background: linear-gradient(135deg, #7c5cc4, #4f9bd9); }
+  .ai-head b { font-size: 0.98rem; }
+  .ai-head small { display: block; opacity: .85; font-size: 0.72rem; margin-top: 1px; }
+  .ai-x { border: 0; background: rgba(255,255,255,.2); color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+  .ai-msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 9px; background: var(--bg, #fafaff); }
+  .ai-m { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 0.88rem; line-height: 1.55; word-break: break-word; }
+  .ai-m.u { align-self: flex-end; background: #7c5cc4; color: #fff; border-bottom-right-radius: 4px; }
+  .ai-m.b { align-self: flex-start; background: #fff; color: var(--ink, #2c2839); border: 1px solid var(--line, #e3e0ee); border-bottom-left-radius: 4px; }
+  .ai-m a { color: #5b3fb3; font-weight: 700; text-decoration: underline; }
+  .ai-m.err { background: #fff4f1; border-color: #f2c4b8; }
+  .ai-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ai-chip { border: 1px solid #cfc4ee; background: #fff; color: #5b3fb3; border-radius: 999px; padding: 6px 11px; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+  .ai-chip:hover { background: #f1ebfc; }
+  .ai-note { font-size: 0.7rem; color: var(--ink-muted, #777); padding: 0 12px 6px; background: var(--bg, #fafaff); }
+  .ai-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line, #e3e0ee); background: #fff; }
+  .ai-form input { flex: 1; min-width: 0; border: 1px solid var(--line, #d8d3ea); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 0.9rem; }
+  .ai-form button { border: 0; border-radius: 12px; padding: 0 16px; font: inherit; font-weight: 800; color: #fff; background: #7c5cc4; cursor: pointer; }
+  .ai-form button:disabled { opacity: .5; cursor: default; }
+  .ai-typing i { display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%; background: #9b7fe0; animation: aiDot 1s infinite; }
+  .ai-typing i:nth-child(2) { animation-delay: .15s; } .ai-typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes aiDot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+  @media (max-width: 480px) { .ai-panel { left: 8px; right: 8px; width: auto; max-width: none; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); } .ai-fab { padding: 11px 14px; } }
+
   /* ---- lightweight modal ---- */
   .modal-overlay {
     position: fixed; inset: 0;
@@ -951,6 +980,13 @@
 </footer>
 <div id="toast"></div>
 
+<button type="button" class="ai-fab" id="ai-fab" aria-label="AI 집 찾기 도우미 열기"><span>🤖</span>AI 도우미</button>
+<div class="ai-panel" id="ai-panel" role="dialog" aria-label="AI 집 찾기 도우미">
+  <div class="ai-head"><div><b>🤖 집속사정 AI 도우미</b><small>월계1동 건물 정보를 바탕으로 답해요 · 참고용</small></div><button type="button" class="ai-x" id="ai-x" aria-label="닫기">✕</button></div>
+  <div class="ai-msgs" id="ai-msgs"></div>
+  <div class="ai-note">AI는 틀릴 수 있어요. 실거래가는 국토부 신고 기준 추정치이니 건물 페이지에서 꼭 확인하세요.</div>
+  <form class="ai-form" id="ai-form"><input type="text" id="ai-input" maxlength="200" placeholder="예: 월세 50 이하 원룸 알려줘" autocomplete="off"><button type="submit" id="ai-send">보내기</button></form>
+</div>
 <div class="fab-stack">
   <button type="button" class="fab-btn fab-admin" id="fab-inquiry"><span class="ic">💬</span>관리자<br>문의</button>
   <button type="button" class="fab-btn fab-report" id="fab-report"><span class="ic">🚩</span>허위매물<br>신고</button>
@@ -1028,7 +1064,7 @@
 <script>
   // ↓↓↓ Firebase 콘솔(console.firebase.google.com)에서 프로젝트 만든 후
   // "프로젝트 설정(⚙️) > 일반 > 내 앱" 에서 웹(</>) 앱을 등록하면 아래 값을 준다. 그걸 그대로 붙여넣으면 된다. ↓↓↓
-  var FIREBASE_CONFIG = {
+  window.FIREBASE_CONFIG = {
     apiKey: "AIzaSyDjpHq1Z6l2xoHeo5Ha4qalrxdSbkipjD0",
     authDomain: "seokwon-314e5.firebaseapp.com",
     projectId: "seokwon-314e5",
@@ -1038,6 +1074,36 @@
     measurementId: "G-E3N8ME1EFH"
   };
   firebase.initializeApp(FIREBASE_CONFIG);
+</script>
+<script type="module">
+  // Firebase AI Logic (Gemini Developer API). API 키가 코드에 드러나지 않고 Firebase 쪽에서 처리돼요.
+  // App Check를 켰다면 아래 키에 reCAPTCHA v3 사이트 키를 넣어주세요. (비워두면 App Check 없이 동작)
+  var APPCHECK_SITE_KEY = "";
+  var V = "11.10.0", B = "https://www.gstatic.com/firebasejs/" + V + "/";
+  try {
+    var appMod = await import(B + "firebase-app.js");
+    var aiMod = await import(B + "firebase-ai.js");
+    var app = appMod.initializeApp(window.FIREBASE_CONFIG, "wg-ai");
+    if (APPCHECK_SITE_KEY) {
+      var acMod = await import(B + "firebase-app-check.js");
+      acMod.initializeAppCheck(app, { provider: new acMod.ReCaptchaV3Provider(APPCHECK_SITE_KEY), isTokenAutoRefreshEnabled: true });
+    }
+    var ai = aiMod.getAI(app, { backend: new aiMod.GoogleAIBackend() });
+    var MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+    window.__wgAI = {
+      ask: async function (system, contents) {
+        var lastErr;
+        for (var i = 0; i < MODELS.length; i++) {
+          try {
+            var model = aiMod.getGenerativeModel(ai, { model: MODELS[i], systemInstruction: system, generationConfig: { maxOutputTokens: 1200, temperature: 0.4 } });
+            var res = await model.generateContent({ contents: contents });
+            return res.response.text();
+          } catch (e) { lastErr = e; console.warn("[AI]", MODELS[i], e && e.message); }
+        }
+        throw lastErr;
+      }
+    };
+  } catch (e) { console.warn("[AI] 초기화 실패", e); }
 </script>
 <script>
 window.__WOLGYE_SEED__ = {
@@ -4104,6 +4170,126 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       toast("시드 데이터를 넣었어요.");
     }).catch(function (e) { toast("실패: " + (e.message || "")); });
   }
+
+  // ---------------- AI 집 찾기 도우미 (Firebase AI Logic / Gemini) ----------------
+  (function () {
+    var fab = document.getElementById("ai-fab"), panel = document.getElementById("ai-panel");
+    var msgsEl = document.getElementById("ai-msgs"), form = document.getElementById("ai-form");
+    var input = document.getElementById("ai-input"), sendBtn = document.getElementById("ai-send");
+    var history = [], busy = false, lastAt = 0, dataCache = null, started = false;
+    var DAILY_MAX = 30;
+    var SYSTEM =
+      "너는 '집속사정'(광운대 인근 월계1동 실거주 경험 아카이브) 사이트의 AI 집 찾기 도우미야. 한국어로, 친근하지만 간결하게(보통 5문장 이내) 답해.\n" +
+      "규칙:\n" +
+      "1) 반드시 사용자 메시지에 붙은 [건물 데이터]에 있는 내용만 근거로 답해. 데이터에 없으면 '이 사이트 데이터에는 없어요'라고 말하고 지어내지 마.\n" +
+      "2) '실거래(추정)'은 국토부 신고내역 기반 추정치이며 실제 거주자 제보가 아니야. 언급할 때 '국토부 신고 기준 추정'이라고 밝혀. '제보'로 표시된 값만 거주자가 남긴 값이야.\n" +
+      "3) 난방비·소음·곰팡이·채광 같은 거주 후기 상세 내용은 제보를 남긴 사람에게만 열리는 정보라 너는 알지 못해. 물으면 '건물 페이지에서 제보를 남기면 볼 수 있어요'라고 안내해.\n" +
+      "4) 건물을 언급할 때는 반드시 [[건물이름|건물id]] 형식으로 써(데이터의 id 사용). 예: [[EXITO빌라|manual_382_31]]\n" +
+      "5) 추천은 최대 5곳까지, 가격·면적·층·유형 등 근거를 한 줄씩 붙여. 가격 단위는 만원이고 '보증금/월세'는 500/45처럼 읽어.\n" +
+      "6) 부동산 계약·법률·투자 판단을 대신하지 마. 필요하면 '계약 전 등기부등본과 현장 확인이 필요해요'라고 덧붙여.\n" +
+      "7) 사이트와 무관한 요청(코딩, 숙제 등)에는 정중히 거절하고 집 찾기 질문을 유도해.";
+
+    function today() { return new Date().toISOString().slice(0, 10); }
+    function usedToday() { try { var o = JSON.parse(localStorage.getItem("wg_ai_cnt") || "{}"); return o.d === today() ? o.n : 0; } catch (e) { return 0; } }
+    function bump() { try { localStorage.setItem("wg_ai_cnt", JSON.stringify({ d: today(), n: usedToday() + 1 })); } catch (e) {} }
+
+    function fmtRt(d) { return d ? rtDealPrice(d) + "(" + (d.area ? d.area + "㎡" : "") + (d.floor ? "," + rtFloor(d.floor) : "") + "," + String(d.date || "").slice(0, 7) + ")" : ""; }
+    function lineOf(b) {
+      var id = b.id || b._id, bl = b.bld || {}, rs = rtLatest(b.rt || b.rtRoad);
+      var parts = [id, b.name || "", shortAddr(b), b.buildingType || "", (bl.kind || ""), bl.builtYear ? bl.builtYear + "년준공" : "", bl.units ? bl.units + "가구" : "", bl.floors ? bl.floors + "층건물" : ""];
+      var rt = [];
+      if (rs.wol) rt.push("월세 " + fmtRt(rs.wol)); if (rs.jeon) rt.push("전세 " + fmtRt(rs.jeon)); if (rs.sale) rt.push("매매 " + fmtRt(rs.sale));
+      parts.push(rt.length ? "실거래(추정" + (!b.rt && b.rtRoad ? ",같은길" : "") + "): " + rt.join(" ") : "");
+      if (b.lastReportAt) parts.push("제보: " + (shortPrice(b) || ""));
+      return parts.join(" | ");
+    }
+    function hasPrice(b) { return !!(b.lastReportAt || b.rt || b.rtRoad); }
+    function pickCandidates(all, q) {
+      var ql = q.toLowerCase().replace(/\s+/g, "");
+      var types = ["원룸", "투룸", "오피스텔", "빌라", "다가구", "다세대", "연립", "다중", "도시형", "아파트"].filter(function (t) { return ql.indexOf(t) > -1; });
+      var scored = all.map(function (b) {
+        var sc = 0, nm = String(b.name || "").toLowerCase().replace(/\s+/g, ""), ad = shortAddr(b).replace(/\s+/g, "").toLowerCase();
+        var road = (ad.match(/^[가-힣0-9]+(?:로|길)/) || [""])[0];
+        if (nm.length >= 2 && ql.indexOf(nm) > -1) sc += 100;
+        if (ad && ql.indexOf(ad) > -1) sc += 100;
+        if (road && road.length >= 3 && ql.indexOf(road) > -1) sc += 20;
+        var txt = ((b.buildingType || "") + ((b.bld && b.bld.kind) || "")).replace(/\s+/g, "");
+        types.forEach(function (t) { if (txt.indexOf(t) > -1) sc += 8; });
+        if (hasPrice(b)) sc += 3;
+        if (b.lastReportAt) sc += 2;
+        if (!isUnnamed(b)) sc += 1;
+        return { b: b, sc: sc };
+      });
+      scored.sort(function (x, y) { return y.sc - x.sc; });
+      return scored.slice(0, 200).map(function (x) { return x.b; });
+    }
+    function loadData() {
+      if (homeCache && homeCache.length) return Promise.resolve(homeCache);
+      if (dataCache) return Promise.resolve(dataCache);
+      if (!db) return Promise.resolve([]);
+      return db.collection("buildings").limit(2000).get().then(function (snap) {
+        dataCache = snap.docs.map(function (d) { return fixName(Object.assign({ id: d.id }, d.data())); });
+        return dataCache;
+      }).catch(function () { return []; });
+    }
+    function render(text) {
+      var h = esc(text);
+      h = h.replace(/\[\[(.+?)\|([A-Za-z0-9_\-]+)\]\]/g, function (m, n, id) { return '<a href="#/building/' + encodeURIComponent(id) + '" data-ai-link="1">' + n + "</a>"; });
+      h = h.replace(/\[\[(.+?)\]\]/g, "$1").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+      return h;
+    }
+    function add(role, html, cls) {
+      var d = document.createElement("div");
+      d.className = "ai-m " + role + (cls ? " " + cls : "");
+      d.innerHTML = html;
+      msgsEl.appendChild(d); msgsEl.scrollTop = msgsEl.scrollHeight;
+      return d;
+    }
+    function start() {
+      if (started) return; started = true;
+      add("b", "안녕하세요! 월계1동 건물 정보(건축물대장·국토부 실거래가·거주자 제보)를 바탕으로 집 찾는 걸 도와드려요. 이렇게 물어보세요 👇");
+      var c = document.createElement("div"); c.className = "ai-chips";
+      ["월세 50 이하 원룸 추천해줘", "준공 10년 이내 빌라 알려줘", "EXITO빌라 최근 실거래가는?", "제보하면 뭐가 열려요?"].forEach(function (q) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "ai-chip"; b.textContent = q;
+        b.addEventListener("click", function () { c.remove(); ask(q); });
+        c.appendChild(b);
+      });
+      msgsEl.appendChild(c);
+    }
+    function ask(q) {
+      q = String(q || "").trim();
+      if (!q || busy) return;
+      if (!window.__wgAI) { add("b", "AI 연결을 아직 못 했어요. 새로고침 후 다시 시도해 주세요.", "err"); return; }
+      if (usedToday() >= DAILY_MAX) { add("b", "오늘 쓸 수 있는 질문 횟수(" + DAILY_MAX + "회)를 다 썼어요. 내일 다시 이용해 주세요.", "err"); return; }
+      var now = Date.now();
+      if (now - lastAt < 2500) { add("b", "조금만 천천히 물어봐 주세요 🙏", "err"); return; }
+      lastAt = now; busy = true; sendBtn.disabled = true;
+      add("u", esc(q));
+      var wait = add("b", '<span class="ai-typing"><i></i><i></i><i></i></span>');
+      loadData().then(function (all) {
+        var cands = pickCandidates(all, q + " " + history.slice(-2).map(function (h) { return h.role === "user" ? h.parts[0].text : ""; }).join(" "));
+        var ctx = "[건물 데이터] 전체 " + all.length + "곳 중 질문과 관련 높은 " + cands.length + "곳 (형식: id | 이름 | 주소 | 유형 | 종류 | 준공 | 가구수 | 층수 | 가격)\n" + cands.map(lineOf).join("\n") + "\n[질문] " + q;
+        var contents = history.slice(-8).concat([{ role: "user", parts: [{ text: ctx }] }]);
+        return window.__wgAI.ask(SYSTEM, contents);
+      }).then(function (text) {
+        text = String(text || "").trim() || "답변을 만들지 못했어요. 다른 표현으로 다시 물어봐 주세요.";
+        history.push({ role: "user", parts: [{ text: q }] }, { role: "model", parts: [{ text: text }] });
+        bump();
+        wait.innerHTML = render(text);
+      }).catch(function (e) {
+        var m = (e && e.message) || "";
+        var hint = /permission|403|API has not|not enabled|disabled/i.test(m) ? "AI 기능이 아직 켜지지 않았어요. (관리자: Firebase 콘솔 → AI Logic 시작하기)"
+          : /quota|429|RESOURCE_EXHAUSTED/i.test(m) ? "지금 질문이 몰려서 잠시 막혔어요. 1분 뒤 다시 시도해 주세요."
+          : /app.?check/i.test(m) ? "보안 확인(App Check)에 실패했어요. 새로고침 후 다시 시도해 주세요."
+          : "AI 응답을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.";
+        wait.className = "ai-m b err"; wait.textContent = hint + (isAdmin() && m ? " [" + m.slice(0, 120) + "]" : "");
+      }).then(function () { busy = false; sendBtn.disabled = false; msgsEl.scrollTop = msgsEl.scrollHeight; input.focus(); });
+    }
+    fab.addEventListener("click", function () { panel.classList.toggle("open"); if (panel.classList.contains("open")) { start(); setTimeout(function () { input.focus(); }, 50); } });
+    document.getElementById("ai-x").addEventListener("click", function () { panel.classList.remove("open"); });
+    form.addEventListener("submit", function (ev) { ev.preventDefault(); var v = input.value; input.value = ""; ask(v); });
+    msgsEl.addEventListener("click", function (ev) { if (ev.target.closest && ev.target.closest("[data-ai-link]") && window.innerWidth <= 480) panel.classList.remove("open"); });
+  })();
 
   // ---------------- 문의 / 신고 (플로팅 버튼) ----------------
   function openModal(id) { var el = document.getElementById(id); if (el) el.classList.add("open"); }
