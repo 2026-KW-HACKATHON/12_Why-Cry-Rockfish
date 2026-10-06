@@ -736,10 +736,15 @@
   .hl-row { transition: background .2s ease, transform .2s ease; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; transition: background .15s ease; animation: hlIn .35s ease both; animation-delay: calc(var(--i) * 22ms); }
   .hl-row:hover { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
   @keyframes hlIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .hl-thumb .st-thumb { display: block; width: 100%; height: 100%; }
+  .hl-row { animation: none !important; }
   .hl-thumb { position: relative; width: 58px; height: 40px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #f1ebfc, #e4f0fb); }
   .hl-thumb .sky-thumb::after { width: 6px; height: 6px; margin: -3px 0 0 -3px; border-width: 1.5px; }
   .hl-thumb .sky-thumb [id^="_kakao_copyright_"], .hl-thumb .sky-thumb [id^="_extra_copyright_"] { transform: scale(.6); transform-origin: left bottom; }
   .hl-main { min-width: 0; display: flex; flex-direction: column; }
+  .hl-edit, .b-name-edit { border: 1px solid var(--line, #ddd); background: var(--surface, #fff); color: var(--accent-strong, #4b3fa8); border-radius: 8px; font: inherit; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; cursor: pointer; flex: none; line-height: 1.4; }
+  .hl-edit:hover, .b-name-edit:hover { background: var(--accent-soft, #efeafc); }
+  .b-name-edit { margin-left: 10px; vertical-align: middle; font-size: 0.8rem; padding: 4px 10px; }
   .hl-name { font-weight: 700; font-size: 0.93rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 7px; }
   .hl-dot { width: 7px; height: 7px; border-radius: 50%; background: #c9bde3; flex: none; }
   .hl-dot.on { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
@@ -1711,6 +1716,38 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); thumbObserver.observe(el); });
     }).catch(function () {});
   }
+  // ---- 목록 썸네일(정적): 지도·네트워크 없이 바로 그려지는 작은 SVG. 층수·유형 색만 반영, 같은 모양은 재사용 ----
+  var staticThumbCache = {};
+  function staticThumbHtml(b) {
+    var type = ART_PALETTES[b.buildingType] ? b.buildingType : "기타";
+    var f = b.bld && Number(b.bld.floors);
+    var floors = f >= 1 ? Math.min(Math.round(f), 7) : 3;
+    var units = b.bld && Number(b.bld.units) || 0;
+    var cols = units >= 8 ? 3 : 2;
+    var v = hashStr(String(b.id || b._id || b.name || "")) % 3;
+    var key = type + "|" + floors + "|" + cols + "|" + v;
+    if (staticThumbCache[key]) return staticThumbCache[key];
+    var pal = ART_PALETTES[type];
+    var bw = cols === 3 ? 30 : 22, bx = (58 - bw) / 2 + (v - 1) * 3;
+    var fh = Math.min(4.6, 28 / floors), bh = floors * fh + 3, by = 34 - bh;
+    var win = "", ww = 3.4, gap = (bw - 6 - cols * ww) / Math.max(cols - 1, 1);
+    for (var r = 0; r < floors; r++) {
+      for (var c = 0; c < cols; c++) {
+        var lit = ((r * 7 + c * 3 + v) % 5) < 2;
+        win += '<rect x="' + (bx + 3 + c * (ww + gap)).toFixed(1) + '" y="' + (by + 2.5 + r * fh).toFixed(1) + '" width="' + ww + '" height="' + (fh * 0.5).toFixed(1) + '" fill="' + (lit ? pal.lit : pal.dark) + '"' + (lit ? "" : ' opacity=".55"') + "/>";
+      }
+    }
+    var html =
+      '<svg class="st-thumb" viewBox="0 0 58 40" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
+        '<rect width="58" height="40" fill="' + pal.skyTop + '"/>' +
+        '<rect y="34" width="58" height="6" fill="' + pal.ground + '"/>' +
+        '<rect x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw + '" height="' + bh.toFixed(1) + '" rx="1" fill="' + pal.building + '"/>' +
+        win +
+        '<rect x="' + (bx + bw / 2 - 1.6).toFixed(1) + '" y="30" width="3.2" height="4" fill="' + pal.door + '"/>' +
+      "</svg>";
+    staticThumbCache[key] = html;
+    return html;
+  }
   function buildingCardHtml(b) {
     var price = lastPriceLine(b);
     var id = b.id || b._id;
@@ -2015,6 +2052,32 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     if (id && NAME_FIX[id] && isUnnamed(b)) b.name = NAME_FIX[id];
     return b;
   }
+  // 관리자 빠른 이름 수정 (목록 ✏️ / 상세 ✏️ 공통)
+  function adminRenameBuilding(id) {
+    if (!isAdmin() || !db) { toast("관리자 로그인이 필요해요."); return; }
+    var cur = "";
+    var all = (typeof homeCache !== "undefined" && homeCache) || [];
+    for (var i = 0; i < all.length; i++) { if (all[i].id === id) { cur = all[i]; break; } }
+    var curName = cur && !isUnnamed(cur) ? cur.name : "";
+    var nn = window.prompt("건물 이름을 입력하세요" + (cur && isUnnamed(cur) ? "\n(지금은 주소만 있어요: " + (cur.name || "") + ")" : ""), curName || (cur && cur.name) || "");
+    if (nn === null) return;
+    nn = nn.trim();
+    if (!nn) { toast("이름을 비워둘 수는 없어요."); return; }
+    if (nn.length > 40) { toast("이름은 40자 이내로 입력해주세요."); return; }
+    db.doc("buildings/" + id).update({ name: nn, nameEditedBy: currentUser.email, nameEditedAt: new Date().toISOString() })
+      .then(function () {
+        if (cur) cur.name = nn;
+        if (NAME_FIX[id]) delete NAME_FIX[id];
+        toast("건물 이름을 '" + nn + "'(으)로 바꿨어요.");
+      })
+      .catch(function (e) { toast("수정 실패: " + (e.message || "")); });
+  }
+  document.addEventListener("click", function (ev) {
+    var t = ev.target && ev.target.closest && ev.target.closest("[data-edit-name]");
+    if (!t) return;
+    ev.preventDefault(); ev.stopPropagation();
+    adminRenameBuilding(t.getAttribute("data-edit-name"));
+  }, true);
   function groupRows(rows) {
     var groups = {}, order = [];
     function add(k, b) { if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(b); }
@@ -2052,9 +2115,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     var est = !has ? rtEstPrice(b) : "";
     return (
       '<a class="hl-row' + (id === homeSelectedId ? " sel" : "") + '" data-id="' + esc(id) + '" href="#/building/' + encodeURIComponent(id) + '" style="--i:' + Math.min(i, 18) + '">' +
-        '<span class="hl-thumb">' + skyThumbHtml(b) + "</span>" +
+        '<span class="hl-thumb">' + staticThumbHtml(b) + "</span>" +
         '<span class="hl-main">' +
-          '<span class="hl-name"><i class="hl-dot' + (has ? " on" : "") + '"></i>' + esc(b.name || "이름 없는 건물") + "</span>" +
+          '<span class="hl-name"><i class="hl-dot' + (has ? " on" : "") + '"></i>' + esc(b.name || "이름 없는 건물") + (isAdmin() ? '<button type="button" class="hl-edit" data-edit-name="' + esc(id) + '" title="건물 이름 수정">✏️ 이름</button>' : "") + "</span>" +
           '<span class="hl-sub">' + esc(shortAddr(b) || "주소 미상") + " · " + esc(b.buildingType || "기타") + "</span>" +
         "</span>" +
         '<span class="hl-meta">' + (has ? "<b>" + esc(price) + "</b><small>" + esc(relTime(b.lastReportAt)) + " 전</small>" : est ? '<b class="est">' + esc(est) + '<i class="est-tag">추정</i></b><small>' + (b.rt ? "실거래 " + esc(relTime(rtDateIso(b.rt))) + " 전" : "같은 길 시세") + "</small>" : '<small class="wait">제보 없음</small>') + "</span>" +
@@ -2460,7 +2523,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         '<div id="b-hero-slot"></div>' +
         '<div class="b-head">' +
           '<span class="tag">' + esc(buildingData.buildingType || "기타") + "</span>" +
-          "<h2>" + esc(buildingData.name) + "</h2>" +
+          "<h2>" + esc(buildingData.name) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
           '<div class="addr">' + (buildingData.zonecode ? "[" + esc(buildingData.zonecode) + "] " : "") + esc(buildingData.address || "주소 미상") + "</div>" +
           bldInfoHtml(buildingData) +
         "</div>" +
