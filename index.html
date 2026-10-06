@@ -101,6 +101,7 @@
   .btn.ghost { background: transparent; border-color: transparent; color: var(--ink-muted); padding-inline: 6px; }
   .btn:disabled { opacity: 0.55; cursor: not-allowed; }
   main { padding-block: 28px 72px; }
+  main:has(.home-split) { padding-bottom: 8px; }
 
   /* ---- intro strip ---- */
   .intro {
@@ -607,7 +608,8 @@
   .hs-panel { padding: 30px 26px 60px 18px; min-width: 0; }
   .hs-photo { transition: opacity .55s ease, transform .9s ease; }
   .hs-hero { scroll-margin-top: 120px; }
-  .hs-mapbox { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .55s ease; }
+  .hs-mapbox { position: absolute; inset: 14px 10px 18px 18px; opacity: 0; pointer-events: none; transition: opacity .55s ease, transform .55s ease; transform: scale(.985); border-radius: 22px; overflow: hidden; border: 1.5px dashed var(--dash); box-shadow: 0 24px 50px -28px rgba(76,56,140,.45); background: var(--surface-2); }
+  .hs-hero.map-on .hs-mapbox { transform: none; }
   .hs-mapbox #home-map { position: absolute; inset: 0; height: 100%; }
   .hs-hero.map-on .hs-photo { opacity: 0; transform: scale(1.04); }
   .hs-hero.map-on .hs-mapbox { opacity: 1; pointer-events: auto; }
@@ -629,7 +631,7 @@
   @keyframes drift { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(-2%, 1.5%) scale(1.04); } 100% { transform: translate(2%, -1%) scale(1.02); } }
   .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
   .reveal.in { opacity: 1; transform: none; }
-  .site-foot { position: relative; margin-top: 40px; padding: 10px 16px 26px; text-align: center; overflow: hidden; }
+  .site-foot { position: relative; margin-top: 12px; padding: 10px 16px 26px; text-align: center; overflow: hidden; }
   .foot-mark { width: min(1100px, 96vw); height: auto; display: block; margin: 0 auto; }
   .foot-mark text { font-family: var(--serif); font-weight: 700; }
   .foot-mark .fill { fill: url(#fmGrad); opacity: .55; }
@@ -726,6 +728,7 @@
     .hs-copy { left: 20px; bottom: 18px; }
     .hs-hero { transition: height .45s ease; }
     .hs-hero.map-on { height: 64vh; }
+    .hs-mapbox { inset: 8px 10px 10px; border-radius: 16px; }
     .hs-map-btn { left: 50%; transform: translateX(-50%); bottom: 26px; }
     .hs-map-btn:hover { transform: translateX(-50%) translateY(-2px); }
     .hs-hero.map-on .hs-map-btn { transform: translateX(-50%) translateY(8px); }
