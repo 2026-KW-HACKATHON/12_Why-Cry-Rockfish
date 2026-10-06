@@ -1349,38 +1349,53 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   }
   // ---- 국토교통부 실거래가 (신고내역 기반 추정치) ----
   function bigWon(n) { n = Number(n); return n >= 10000 ? (Math.round(n / 1000) / 10) + "억" : n.toLocaleString("ko-KR") + "만"; }
+  function rtLatest(s) {
+    if (!s) return {};
+    if (s.latest) return s.latest;
+    var out = {};
+    (s.recent || []).forEach(function (d) {
+      var k = d.type === "월세" ? "wol" : d.type === "전세" ? "jeon" : "sale";
+      if (!out[k]) out[k] = d;
+    });
+    return out;
+  }
+  function rtDealPrice(d) { return d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + "/" + d.r : d.type + " " + bigWon(d.a); }
+  function rtFloor(f) { f = Number(f); return !f ? "" : f < 0 ? "지하" + (-f) + "층" : f + "층"; }
   function rtEstPrice(b) {
     var s = b && (b.rt || b.rtRoad);
     if (!s) return "";
-    if (s.wol) return "≈" + Number(s.wol.dep).toLocaleString("ko-KR") + "/" + s.wol.rent;
-    if (s.jeon) return "≈전세 " + bigWon(s.jeon.avg);
-    if (s.sale) return "≈매매 " + bigWon(s.sale.avg);
-    return "";
+    var L = rtLatest(s), d = null;
+    if (L.wol && L.jeon) d = L.wol.date >= L.jeon.date ? L.wol : L.jeon;
+    else d = L.wol || L.jeon || L.sale;
+    return d ? rtDealPrice(d) : "";
   }
   function rtDateIso(s) { return s && s.lastDate ? s.lastDate + "T00:00:00+09:00" : ""; }
   function rtCardHtml(b) {
     var s = b && b.rt, road = false;
     if (!s && b && b.rtRoad) { s = b.rtRoad; road = true; }
     if (!s) return "";
-    var tiles = [];
-    if (s.wol) tiles.push('<div class="rt-tile"><div class="k">월세 평균</div><div class="v">' + Number(s.wol.dep).toLocaleString("ko-KR") + " / " + s.wol.rent + '</div><div class="s">' + s.wol.n + "건 · 월세 " + s.wol.rentMin + "~" + s.wol.rentMax + "만</div></div>");
-    if (s.jeon) tiles.push('<div class="rt-tile"><div class="k">전세 평균</div><div class="v">' + esc(fmtWon(s.jeon.avg)) + '</div><div class="s">' + s.jeon.n + "건" + (s.jeon.min != null ? " · " + bigWon(s.jeon.min) + "~" + bigWon(s.jeon.max) : "") + "</div></div>");
-    if (s.sale) tiles.push('<div class="rt-tile"><div class="k">매매 평균</div><div class="v">' + esc(fmtWon(s.sale.avg)) + '</div><div class="s">' + s.sale.n + "건 · 최근 " + bigWon(s.sale.last) + "</div></div>");
-    tiles.push('<div class="rt-tile"><div class="k">최근 업데이트</div><div class="v">' + esc(String(s.lastDate || "-").replace(/-/g, ".")) + '</div><div class="s">계약일 기준 · 총 ' + s.n + "건</div></div>");
-    if (!road && (s.area || s.year)) tiles.push('<div class="rt-tile"><div class="k">평균 전용면적</div><div class="v">' + (s.area ? s.area + "㎡" : "-") + '</div><div class="s">' + (s.year ? s.year + "년 준공" : "") + "</div></div>");
+    var L = rtLatest(s);
+    function tile(label, d) {
+      if (!d) return "";
+      var v = d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + " / " + d.r : fmtWon(d.a);
+      var meta = [String(d.date).replace(/-/g, "."), d.area ? d.area + "㎡" : "", rtFloor(d.floor)].filter(Boolean).join(" · ");
+      return '<div class="rt-tile"><div class="k">' + label + '</div><div class="v">' + esc(v) + '</div><div class="s">' + esc(meta) + "</div></div>";
+    }
+    var tiles = tile("최근 월세", L.wol) + tile("최근 전세", L.jeon) + tile("최근 매매", L.sale) +
+      '<div class="rt-tile"><div class="k">최근 업데이트</div><div class="v">' + esc(String(s.lastDate || "-").replace(/-/g, ".")) + '</div><div class="s">계약일 기준</div></div>';
     var rec = (s.recent || []).map(function (d) {
       var cls = d.type === "전세" ? " j" : d.type === "매매" ? " s" : "";
       var price = d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + "/" + d.r : bigWon(d.a);
-      var meta = (d.area ? d.area + "㎡" : "") + (d.floor ? " · " + d.floor + "층" : "");
+      var meta = [d.area ? d.area + "㎡" : "", rtFloor(d.floor)].filter(Boolean).join(" · ");
       return '<div class="rr"><span class="d">' + esc(String(d.date).replace(/-/g, ".")) + '</span><span class="t' + cls + '">' + esc(d.type) + '</span><span class="p">' + esc(price) + '</span><span class="m">' + esc(meta) + "</span></div>";
     }).join("");
     return (
       '<section class="rt-card">' +
-        '<div class="rt-top"><h3>' + (road ? "같은 길 시세 참고 · " + esc(s.road) : "실거래 참고가") + '</h3><span class="rt-badge">국토부 신고내역 · 추정치</span></div>' +
-        '<p class="rt-note"><b>실제 제보가 아니라 추정치입니다.</b> 국토교통부 실거래가 공개시스템의 ' + (road ? esc(s.road) + " 단독·다가구 전월세" : esc(s.kind || "") + " 신고내역") + "(" + esc(s.period || "") + ")을 바탕으로 계산했어요. 호실·면적·층에 따라 실제 가격과 차이가 날 수 있어요." + (road ? " 이 건물만의 거래가 아니라 같은 길 전체 평균이에요." : "") + "</p>" +
-        '<div class="rt-grid">' + tiles.join("") + "</div>" +
+        '<div class="rt-top"><h3>' + (road ? "같은 길 최근 실거래 · " + esc(s.road) : "최근 실거래가") + '</h3><span class="rt-badge">국토부 신고내역 · 추정치</span></div>' +
+        '<p class="rt-note"><b>실제 제보가 아니라 추정치입니다.</b> 국토교통부 실거래가 공개시스템에 신고된 ' + (road ? esc(s.road) + " 단독·다가구 전월세 중 " : "") + "가장 최근 거래를 보여드려요. 호실·면적·층에 따라 실제 가격과 차이가 날 수 있어요." + (road ? " 이 건물이 아니라 같은 길의 다른 건물 거래일 수 있어요." : "") + "</p>" +
+        '<div class="rt-grid">' + tiles + "</div>" +
         (rec ? '<div class="rt-recent">' + rec + "</div>" : "") +
-        '<div class="rt-foot">관리비는 국토부 자료에 없어요. 평균 관리비는 거주자 제보로만 채워져요. · 자료 수집 ' + esc(s.fetchedAt || "") + "</div>" +
+        '<div class="rt-foot">관리비는 국토부 자료에 없어서 거주자 제보로만 채워져요. · 자료 수집 ' + esc(s.fetchedAt || "") + "</div>" +
       "</section>"
     );
   }
@@ -2284,7 +2299,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       };
       listEl.innerHTML =
         (pinned.length ? sec("__pin", "최근 올라온 제보", pinned, "") : "") +
-        (rtPinned.length ? sec("__rt", "최근 실거래 업데이트 (국토부·추정)", rtPinned, "") : "") +
+        (rtPinned.length ? sec("__rt", "최근 실거래 (국토부·추정)", rtPinned, "") : "") +
         groups.map(function (gr) { return sec(gr.k, gr.k, gr.rows); }).join("");
       Array.prototype.forEach.call(listEl.querySelectorAll(".hl-head"), function (h) {
         h.addEventListener("click", function () {
