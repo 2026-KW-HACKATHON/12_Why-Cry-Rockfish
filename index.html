@@ -699,7 +699,9 @@
   #list .tinted .hl-dot { background: transparent; border: 1.5px solid var(--deep); box-shadow: none; }
   #list .tinted .hl-dot.on { background: var(--deep); }
   #list .tinted .hl-meta small.wait { color: rgba(44,40,57,.5); }
-  .hl-row { margin-top: 2px; }
+  .hl-row { margin-top: 2px; content-visibility: auto; contain-intrinsic-size: auto 72px; }
+  .hl-more { display: block; width: calc(100% - 16px); margin: 8px 8px 4px; padding: 9px 12px; border: 1px dashed var(--dash); border-radius: 10px; background: rgba(255,255,255,.6); color: var(--accent-strong); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; }
+  .hl-more:hover { background: #fff; }
   .hl-dot { width: 7px; height: 7px; }
   .mk-sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; border: 1px solid rgba(0,0,0,.35); }
   .hs-count b { font-family: var(--mono); }
@@ -1634,7 +1636,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   }
   // 로드뷰 썸네일: 화면에 보이는 카드에만 작은 로드뷰를 띄우고(건물 쪽을 바라보게), 화면에서 멀어지면 내려서
   // 브라우저 부담(동시에 띄우는 개수)을 줄임. 근처에 로드뷰가 없으면 위성사진으로 대신 보여줌
-  var thumbObserver = null, panoCache = {};
+  var thumbObserver = null, panoCache = {}, thumbQ = [], thumbBusy = false;
+  function thumbPump() {
+    if (thumbBusy) return;
+    var fn = thumbQ.shift();
+    if (!fn) return;
+    thumbBusy = true;
+    try { fn(); } catch (e) {}
+    setTimeout(function () { thumbBusy = false; thumbPump(); }, 90);
+  }
   function bearingDeg(fromLat, fromLng, toLat, toLng) {
     var y1 = fromLat * Math.PI / 180, y2 = toLat * Math.PI / 180, dl = (toLng - fromLng) * Math.PI / 180;
     var b = Math.atan2(Math.sin(dl) * Math.cos(y2), Math.cos(y1) * Math.sin(y2) - Math.sin(y1) * Math.cos(y2) * Math.cos(dl)) * 180 / Math.PI;
@@ -1646,12 +1656,25 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     loadKakao().then(function (kakao) {
       var K = kakao.maps;
       function unload(el) {
+        el.removeAttribute("data-q");
         if (!el.getAttribute("data-live")) return;
         el.removeAttribute("data-live");
         el.classList.remove("on");
         el.innerHTML = "";
       }
       function draw(el) {
+        if (el.getAttribute("data-live") || el.getAttribute("data-q")) return;
+        el.setAttribute("data-q", "1");
+        thumbQ.push(function () {
+          el.removeAttribute("data-q");
+          if (!document.body.contains(el)) return;
+          var r = el.getBoundingClientRect();
+          if (r.bottom < -400 || r.top > window.innerHeight + 400) return;
+          drawNow(el);
+        });
+        thumbPump();
+      }
+      function drawNow(el) {
         if (el.getAttribute("data-live")) return;
         el.setAttribute("data-live", "1");
         var lat = Number(el.getAttribute("data-lat")), lng = Number(el.getAttribute("data-lng"));
@@ -1997,6 +2020,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     });
     return order.map(function (k) { return { k: k, rows: groups[k] }; });
   }
+  var ROW_CAP = 30, moreLists = {};
   function homeRowHtml(b, i) {
     var id = b.id || b._id;
     var has = !!b.lastReportAt;
@@ -2121,9 +2145,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         if (!document.getElementById("home-map")) { m.destroy(); return null; }
         homeMap = m;
         m.fitWolgye();
-        m.onZoom(drawMarkers);
+        var idleTimer = null;
         m.onDragStart(function () { mapUserMoved = true; });
-        m.onIdle(paintMapPanel);
+        m.onIdle(function () {
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(function () { if (!homeMap) return; drawMarkers(); paintMapPanel(); }, 160);
+        });
         m.onClick(function () {
           if (mapSelection) { mapSelection = null; drawMarkers(); paintMapPanel(); }
         });
@@ -2140,6 +2167,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         var ll = buildingLatLng(b);
         return ll ? { b: b, ll: ll } : null;
       }).filter(Boolean);
+      var noPosAll = mapRows.length - items.length;
+      var inView = items.filter(function (it) { return homeMap.contains(it.ll) || (mapSelection && mapSelection.indexOf(it.b.id) > -1); });
+      if (inView.length) items = inView;
       // 화면에서 가까이 붙은 매물끼리 묶어서 둥근 아이콘(개수)으로 보여줌
       var cell = 88, groups = {};
       items.forEach(function (it) {
@@ -2181,7 +2211,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         }
       });
       var hint = document.getElementById("map-hint");
-      var noPos = mapRows.length - items.length;
+      var noPos = noPosAll;
       if (hint) {
         hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 이름·가격 표시를 누르면 해당 건물이 아래에 떠요." +
           (noPos > 0
@@ -2191,6 +2221,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
             : "");
       }
     }
+    var MAP_CAP = 40, panelRows = [];
     function paintMapPanel() {
       var panel = document.getElementById("map-list"), head = document.getElementById("map-list-h");
       if (!panel || !homeMap) return;
@@ -2207,11 +2238,21 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       if (mapSelection) {
         document.getElementById("map-clear-sel").addEventListener("click", function () { mapSelection = null; drawMarkers(); paintMapPanel(); });
       }
+      panelRows = rows;
       panel.innerHTML = rows.length
-        ? rows.map(function (b, i) { return homeRowHtml(b, i); }).join("")
+        ? rows.slice(0, MAP_CAP).map(function (b, i) { return homeRowHtml(b, i); }).join("") +
+          (rows.length > MAP_CAP ? '<button type="button" class="hl-more" id="map-more">' + (rows.length - MAP_CAP) + "곳 더 보기 (지도를 확대하면 더 빨리 찾아요)</button>" : "")
         : '<div class="empty" style="margin-top:0">이 영역에는 매물이 없어요. 지도를 움직이거나 확대/축소해보세요.</div>';
       hydrateSkyThumbs(panel);
     }
+    document.getElementById("map-list").addEventListener("click", function (ev) {
+      var btn = ev.target.closest && ev.target.closest("#map-more");
+      if (!btn) return;
+      var start = this.querySelectorAll(".hl-row").length;
+      btn.insertAdjacentHTML("beforebegin", panelRows.slice(start, start + 60).map(function (b, i) { return homeRowHtml(b, Math.min(i, 18)); }).join(""));
+      if (start + 60 >= panelRows.length) btn.remove(); else btn.textContent = (panelRows.length - start - 60) + "곳 더 보기 (지도를 확대하면 더 빨리 찾아요)";
+      hydrateSkyThumbs(this);
+    });
     function fitIfNeeded() {
       if (!homeMap || mapUserMoved || mapSelection) return;
       var pts = mapRows.map(buildingLatLng).filter(Boolean);
@@ -2301,7 +2342,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       var rtPinned = rows.filter(function (b) { return b.rt && b.rt.lastDate; })
         .sort(function (x, y) { return String(y.rt.lastDate).localeCompare(String(x.rt.lastDate)); }).slice(0, 5);
       var secNo = 0;
+      moreLists = {};
       var sec = function (key, title, list, icon) {
+        moreLists[key] = list;
         var closed = !!homeCollapsed[homeGroup + ":" + key];
         var isPin = key === "__pin" || key === "__rt";
         var no = isPin ? "★" : String(++secNo).padStart(2, "0");
@@ -2312,7 +2355,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
               '<span class="hl-no">[' + no + "]</span>" +
               '<span class="hl-title">' + (icon || "") + esc(title) + '</span><span class="hl-count">' + list.length + '곳</span><svg class="hl-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
             "</button>" +
-            '<div class="hl-body"><div class="hl-inner">' + list.map(function (b) { return homeRowHtml(b, idx++); }).join("") + "</div></div>" +
+            '<div class="hl-body"><div class="hl-inner">' + list.slice(0, ROW_CAP).map(function (b) { return homeRowHtml(b, idx++); }).join("") +
+              (list.length > ROW_CAP ? '<button type="button" class="hl-more" data-more="' + esc(key) + '">' + (list.length - ROW_CAP) + "곳 더 보기</button>" : "") + "</div></div>" +
           "</div>"
         );
       };
@@ -2330,17 +2374,29 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       });
       hydrateSkyThumbs(listEl);
     }
+    listEl.addEventListener("click", function (ev) {
+      var btn = ev.target.closest && ev.target.closest(".hl-more");
+      if (!btn) return;
+      var list = moreLists[btn.getAttribute("data-more")] || [];
+      var inner = btn.parentNode, start = inner.querySelectorAll(".hl-row").length;
+      var html = list.slice(start).map(function (b, i) { return homeRowHtml(b, Math.min(i, 18)); }).join("");
+      btn.insertAdjacentHTML("beforebegin", html);
+      btn.remove();
+      hydrateSkyThumbs(inner);
+    });
 
     qInput.addEventListener("input", paint);
     typeSel.addEventListener("change", paint);
     dealSel.addEventListener("change", paint);
 
     if (!db) { paint(); return; }
+    var snapFirst = false, snapTimer = null;
     var q = db.collection("buildings").limit(2000);
     var unsub = q.onSnapshot(function (snap) {
       homeCache = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
       homeCache.sort(function (x, y) { return String(y.lastReportAt || "").localeCompare(String(x.lastReportAt || "")); });
-      paint();
+      if (!snapFirst) { snapFirst = true; paint(); return; }
+      clearTimeout(snapTimer); snapTimer = setTimeout(paint, 150);
     }, function (e) {
       dbState = "unavailable";
       paint();
