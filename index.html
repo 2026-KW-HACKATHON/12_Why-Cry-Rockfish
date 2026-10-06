@@ -270,6 +270,30 @@
   .star-wrap { position: relative; display: inline-block; }
   .star-wrap input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
   .star-wrap:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  .rt-card { margin-top: 16px; padding: 16px; border: 1.5px dashed var(--dash); border-radius: 14px; background: linear-gradient(180deg, #fdfcff 0%, var(--surface-2) 100%); }
+  .rt-card .rt-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .rt-card h3 { margin: 0; font-size: 1rem; letter-spacing: -0.02em; }
+  .rt-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; color: var(--accent-strong); background: var(--accent-soft); border: 1px solid var(--dash); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .rt-note { margin: 8px 0 12px; font-size: 0.78rem; color: var(--ink-muted); line-height: 1.5; }
+  .rt-note b { color: var(--warn); font-weight: 700; }
+  .rt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .rt-tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .rt-tile .k { font-size: 0.72rem; color: var(--ink-muted); }
+  .rt-tile .v { font-size: 1rem; font-weight: 700; margin-top: 2px; letter-spacing: -0.02em; }
+  .rt-tile .s { font-size: 0.7rem; color: var(--ink-muted); margin-top: 2px; }
+  .rt-recent { margin-top: 12px; border-top: 1px solid var(--line); }
+  .rt-recent .rr { display: grid; grid-template-columns: 84px 40px 1fr auto; gap: 8px; align-items: center; padding: 7px 2px; border-bottom: 1px dashed var(--line); font-size: 0.8rem; }
+  .rt-recent .rr .d { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .rt-recent .rr .t { font-size: 0.7rem; font-weight: 700; text-align: center; border-radius: 6px; padding: 2px 0; background: var(--accent-soft); color: var(--accent-strong); }
+  .rt-recent .rr .t.j { background: #e3f0fb; color: #2f6c9e; }
+  .rt-recent .rr .t.s { background: var(--warn-soft); color: var(--warn); }
+  .rt-recent .rr .p { font-weight: 700; }
+  .rt-recent .rr .m { color: var(--ink-muted); font-size: 0.74rem; white-space: nowrap; }
+  .rt-foot { margin-top: 10px; font-size: 0.74rem; color: var(--ink-muted); }
+  .hl-meta .est { color: var(--accent-strong); }
+  .hl-meta .est-tag { display: inline-block; margin-left: 3px; font-size: 0.62rem; font-weight: 700; color: var(--accent); border: 1px solid var(--dash); border-radius: 4px; padding: 0 3px; vertical-align: 1px; }
+  .mk-pin.est { border-style: dashed !important; background: #fff !important; color: var(--accent-strong); }
+  .mk-pin.est.sel { background: #7c5cc4 !important; color: #fff; }
   .hex-card { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
   .hex-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
   .hex-title { font-weight: 800; font-size: 1.02rem; }
@@ -1323,6 +1347,43 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     if (b.lastDeposit != null && b.lastRent != null) return b.lastDeposit + "/" + b.lastRent;
     return b.buildingType || "매물";
   }
+  // ---- 국토교통부 실거래가 (신고내역 기반 추정치) ----
+  function bigWon(n) { n = Number(n); return n >= 10000 ? (Math.round(n / 1000) / 10) + "억" : n.toLocaleString("ko-KR") + "만"; }
+  function rtEstPrice(b) {
+    var s = b && (b.rt || b.rtRoad);
+    if (!s) return "";
+    if (s.wol) return "≈" + Number(s.wol.dep).toLocaleString("ko-KR") + "/" + s.wol.rent;
+    if (s.jeon) return "≈전세 " + bigWon(s.jeon.avg);
+    if (s.sale) return "≈매매 " + bigWon(s.sale.avg);
+    return "";
+  }
+  function rtDateIso(s) { return s && s.lastDate ? s.lastDate + "T00:00:00+09:00" : ""; }
+  function rtCardHtml(b) {
+    var s = b && b.rt, road = false;
+    if (!s && b && b.rtRoad) { s = b.rtRoad; road = true; }
+    if (!s) return "";
+    var tiles = [];
+    if (s.wol) tiles.push('<div class="rt-tile"><div class="k">월세 평균</div><div class="v">' + Number(s.wol.dep).toLocaleString("ko-KR") + " / " + s.wol.rent + '</div><div class="s">' + s.wol.n + "건 · 월세 " + s.wol.rentMin + "~" + s.wol.rentMax + "만</div></div>");
+    if (s.jeon) tiles.push('<div class="rt-tile"><div class="k">전세 평균</div><div class="v">' + esc(fmtWon(s.jeon.avg)) + '</div><div class="s">' + s.jeon.n + "건" + (s.jeon.min != null ? " · " + bigWon(s.jeon.min) + "~" + bigWon(s.jeon.max) : "") + "</div></div>");
+    if (s.sale) tiles.push('<div class="rt-tile"><div class="k">매매 평균</div><div class="v">' + esc(fmtWon(s.sale.avg)) + '</div><div class="s">' + s.sale.n + "건 · 최근 " + bigWon(s.sale.last) + "</div></div>");
+    tiles.push('<div class="rt-tile"><div class="k">최근 업데이트</div><div class="v">' + esc(String(s.lastDate || "-").replace(/-/g, ".")) + '</div><div class="s">계약일 기준 · 총 ' + s.n + "건</div></div>");
+    if (!road && (s.area || s.year)) tiles.push('<div class="rt-tile"><div class="k">평균 전용면적</div><div class="v">' + (s.area ? s.area + "㎡" : "-") + '</div><div class="s">' + (s.year ? s.year + "년 준공" : "") + "</div></div>");
+    var rec = (s.recent || []).map(function (d) {
+      var cls = d.type === "전세" ? " j" : d.type === "매매" ? " s" : "";
+      var price = d.type === "월세" ? Number(d.a).toLocaleString("ko-KR") + "/" + d.r : bigWon(d.a);
+      var meta = (d.area ? d.area + "㎡" : "") + (d.floor ? " · " + d.floor + "층" : "");
+      return '<div class="rr"><span class="d">' + esc(String(d.date).replace(/-/g, ".")) + '</span><span class="t' + cls + '">' + esc(d.type) + '</span><span class="p">' + esc(price) + '</span><span class="m">' + esc(meta) + "</span></div>";
+    }).join("");
+    return (
+      '<section class="rt-card">' +
+        '<div class="rt-top"><h3>' + (road ? "같은 길 시세 참고 · " + esc(s.road) : "실거래 참고가") + '</h3><span class="rt-badge">국토부 신고내역 · 추정치</span></div>' +
+        '<p class="rt-note"><b>실제 제보가 아니라 추정치입니다.</b> 국토교통부 실거래가 공개시스템의 ' + (road ? esc(s.road) + " 단독·다가구 전월세" : esc(s.kind || "") + " 신고내역") + "(" + esc(s.period || "") + ")을 바탕으로 계산했어요. 호실·면적·층에 따라 실제 가격과 차이가 날 수 있어요." + (road ? " 이 건물만의 거래가 아니라 같은 길 전체 평균이에요." : "") + "</p>" +
+        '<div class="rt-grid">' + tiles.join("") + "</div>" +
+        (rec ? '<div class="rt-recent">' + rec + "</div>" : "") +
+        '<div class="rt-foot">관리비는 국토부 자료에 없어요. 평균 관리비는 거주자 제보로만 채워져요. · 자료 수집 ' + esc(s.fetchedAt || "") + "</div>" +
+      "</section>"
+    );
+  }
   var LEAFLET_SRC = [
     { css: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css", js: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" },
     { css: "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css", js: "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" }
@@ -1906,6 +1967,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     var id = b.id || b._id;
     var has = !!b.lastReportAt;
     var price = has ? shortPrice(b) : "";
+    var est = !has ? rtEstPrice(b) : "";
     return (
       '<a class="hl-row' + (id === homeSelectedId ? " sel" : "") + '" data-id="' + esc(id) + '" href="#/building/' + encodeURIComponent(id) + '" style="--i:' + Math.min(i, 18) + '">' +
         '<span class="hl-thumb">' + skyThumbHtml(b) + "</span>" +
@@ -1913,7 +1975,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
           '<span class="hl-name"><i class="hl-dot' + (has ? " on" : "") + '"></i>' + esc(b.name || "이름 없는 건물") + "</span>" +
           '<span class="hl-sub">' + esc(shortAddr(b) || "주소 미상") + " · " + esc(b.buildingType || "기타") + "</span>" +
         "</span>" +
-        '<span class="hl-meta">' + (has ? "<b>" + esc(price) + "</b><small>" + esc(relTime(b.lastReportAt)) + " 전</small>" : '<small class="wait">제보 없음</small>') + "</span>" +
+        '<span class="hl-meta">' + (has ? "<b>" + esc(price) + "</b><small>" + esc(relTime(b.lastReportAt)) + " 전</small>" : est ? '<b class="est">' + esc(est) + '<i class="est-tag">추정</i></b><small>' + (b.rt ? "실거래 " + esc(relTime(rtDateIso(b.rt))) + " 전" : "같은 길 시세") + "</small>" : '<small class="wait">제보 없음</small>') + "</span>" +
       "</a>"
     );
   }
@@ -2057,8 +2119,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
           var it = g[0];
           var sel = !!(mapSelection && mapSelection.length === 1 && mapSelection[0] === it.b.id);
           var tc = typeColor(it.b.buildingType);
+          var estP = !it.b.lastReportAt && it.b.rt ? rtEstPrice(it.b) : "";
           var html = it.b.lastReportAt
             ? '<span class="mk-pin' + (sel ? " sel" : "") + '" style="border-color:' + tc + ';background:' + (sel ? "#7c5cc4" : tc) + '">' + esc(shortPrice(it.b)) + "</span>"
+            : estP ? '<span class="mk-pin est' + (sel ? " sel" : "") + '" style="border-color:' + tc + '" title="국토부 실거래 추정치">' + esc(estP) + "</span>"
             : '<span class="mk-pin empty' + (sel ? " sel" : "") + '" style="border-color:' + tc + '"><i class="mk-sw" style="background:' + tc + '"></i>' + esc(shortName(it.b.name)) + "</span>";
           homeMarks.push(homeMap.addHtml(it.ll, html, {
             title: it.b.name || "", z: sel ? 10 : 2,
@@ -2200,10 +2264,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       var groups = groupRows(rows), idx = 0;
       var pinned = homeGroup === "recent" ? [] : rows.filter(function (b) { return b.lastReportAt; })
         .sort(function (x, y) { return (y.lastReportAt || "").localeCompare(x.lastReportAt || ""); }).slice(0, 3);
+      var rtPinned = rows.filter(function (b) { return b.rt && b.rt.lastDate; })
+        .sort(function (x, y) { return String(y.rt.lastDate).localeCompare(String(x.rt.lastDate)); }).slice(0, 5);
       var secNo = 0;
       var sec = function (key, title, list, icon) {
         var closed = !!homeCollapsed[homeGroup + ":" + key];
-        var isPin = key === "__pin";
+        var isPin = key === "__pin" || key === "__rt";
         var no = isPin ? "★" : String(++secNo).padStart(2, "0");
         var color = isPin ? "" : (homeGroup === "type" ? typeColor(key) : "");
         return (
@@ -2218,6 +2284,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       };
       listEl.innerHTML =
         (pinned.length ? sec("__pin", "최근 올라온 제보", pinned, "") : "") +
+        (rtPinned.length ? sec("__rt", "최근 실거래 업데이트 (국토부·추정)", rtPinned, "") : "") +
         groups.map(function (gr) { return sec(gr.k, gr.k, gr.rows); }).join("");
       Array.prototype.forEach.call(listEl.querySelectorAll(".hl-head"), function (h) {
         h.addEventListener("click", function () {
@@ -2287,9 +2354,16 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
           stats.priceTiles.map(function (t) {
             return '<div class="stat"><div class="k">' + esc(t.k) + '</div><div class="v">' + esc(t.v) + "</div></div>";
           }).join("") +
-          '<div class="stat"><div class="k">평균 관리비</div><div class="v">' + fmtWon(stats.avgFee) + "</div></div>" +
-          '<div class="stat"><div class="k">최근 업데이트</div><div class="v">' + esc(fmtDate(buildingData.lastReportAt)) + "</div></div>" +
+          '<div class="stat"><div class="k">평균 관리비</div><div class="v">' + (stats.avgFee == null || isNaN(stats.avgFee) ? '<span style="font-size:0.8rem;color:var(--ink-muted)">제보 필요</span>' : fmtWon(stats.avgFee)) + "</div></div>" +
+          '<div class="stat"><div class="k">최근 업데이트</div><div class="v">' + (function () {
+            var rep = buildingData.lastReportAt ? new Date(buildingData.lastReportAt).getTime() : 0;
+            var rs = buildingData.rt || buildingData.rtRoad;
+            var rtT = rs && rs.lastDate ? new Date(rtDateIso(rs)).getTime() : 0;
+            if (rtT > rep) return esc(String(rs.lastDate).replace(/-/g, ".")) + '<div style="font-size:0.7rem;color:var(--ink-muted);font-weight:500">' + (buildingData.rt ? "실거래 신고" : "같은 길 실거래") + "</div>";
+            return esc(fmtDate(buildingData.lastReportAt));
+          })() + "</div></div>" +
         "</div>" +
+        rtCardHtml(buildingData) +
         (adminMode ? adminBuildingBar() : "") +
         (stats.tags.length ? '<div class="chip-row" style="margin-top:14px">' + stats.tags.map(function (t) {
           return '<span class="chip ' + t.cls + '">' + esc(t.label) + "</span>";
