@@ -1994,12 +1994,36 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     return m ? m[1] : "기타 주소";
   }
   function shortAddr(b) { return String(b.roadAddress || b.address || "").replace(/^서울(특별시)?\s*노원구\s*/, "").replace(/\s*\(.*\)$/, ""); }
+  // 건물 이름을 못 찾아서 주소(예: 광운로19가길 14)가 이름 자리에 들어간 건물
+  var UNNAMED_GROUP = "이름 미확인";
+  function isUnnamed(b) {
+    var n = String(b.name || "").trim();
+    if (!n) return true;
+    if (/^월계동\s*\d/.test(n)) return true;
+    if (/^[가-힣0-9]+(로|길)\s?\d+(-\d+)?$/.test(n)) return true;
+    return n === shortAddr(b);
+  }
+  // 로드뷰 간판으로 확인한 건물명 (DB 이름이 아직 주소 형태일 때만 적용)
+  var NAME_FIX = {
+    "bld_377_101": "아이원",
+    "bld_392_88": "허브하우스",
+    "rt_382_22": "그린우드빌",
+    "rt_429_31": "더원하우스"
+  };
+  function fixName(b) {
+    var id = b && (b.id || b._id);
+    if (id && NAME_FIX[id] && isUnnamed(b)) b.name = NAME_FIX[id];
+    return b;
+  }
   function groupRows(rows) {
     var groups = {}, order = [];
     function add(k, b) { if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(b); }
     if (homeGroup === "type") {
-      rows.forEach(function (b) { add(ROOM_TYPES.indexOf(b.buildingType) > -1 ? b.buildingType : "기타", b); });
-      order.sort(function (x, y) { return ROOM_TYPES.indexOf(x) - ROOM_TYPES.indexOf(y); });
+      rows.forEach(function (b) { add(isUnnamed(b) ? UNNAMED_GROUP : (ROOM_TYPES.indexOf(b.buildingType) > -1 ? b.buildingType : "기타"), b); });
+      order.sort(function (x, y) {
+        function rank(k) { return k === UNNAMED_GROUP ? 999 : ROOM_TYPES.indexOf(k); }
+        return rank(x) - rank(y);
+      });
     } else if (homeGroup === "road") {
       rows.forEach(function (b) { add(roadOf(b), b); });
       order.sort(function (x, y) { return (x === "기타 주소") - (y === "기타 주소") || groups[y].length - groups[x].length; });
@@ -2348,7 +2372,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         var closed = !!homeCollapsed[homeGroup + ":" + key];
         var isPin = key === "__pin" || key === "__rt";
         var no = isPin ? "★" : String(++secNo).padStart(2, "0");
-        var color = isPin ? "" : (homeGroup === "type" ? typeColor(key) : "");
+        var color = isPin ? "" : (homeGroup === "type" ? (key === UNNAMED_GROUP ? "#e7e3f1" : typeColor(key)) : "");
         return (
           '<div class="hl-group' + (closed ? " closed" : "") + (color ? " tinted" : " plain") + '" data-key="' + esc(key) + '"' + (color ? ' style="--cat:' + color + '"' : "") + ">" +
             '<button type="button" class="hl-head" aria-expanded="' + (!closed) + '">' +
@@ -2393,7 +2417,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     var snapFirst = false, snapTimer = null;
     var q = db.collection("buildings").limit(2000);
     var unsub = q.onSnapshot(function (snap) {
-      homeCache = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      homeCache = snap.docs.map(function (d) { return fixName(Object.assign({ id: d.id }, d.data())); });
       homeCache.sort(function (x, y) { return String(y.lastReportAt || "").localeCompare(String(x.lastReportAt || "")); });
       if (!snapFirst) { snapFirst = true; paint(); return; }
       clearTimeout(snapTimer); snapTimer = setTimeout(paint, 150);
@@ -2871,7 +2895,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     }
 
     var bUnsub = db.doc("buildings/" + id).onSnapshot(function (snap) {
-      buildingData = snap.exists ? Object.assign({ _id: id }, snap.data()) : null;
+      buildingData = snap.exists ? fixName(Object.assign({ _id: id }, snap.data())) : null;
       paint();
     }, function () { buildingData = null; paint(); });
     track(bUnsub);
@@ -3317,7 +3341,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     if (db) {
       if (!editCtx) ensurePkMap();
       db.collection("buildings").limit(2000).get().then(function (snap) {
-        allBuildings = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); })
+        allBuildings = snap.docs.map(function (d) { return fixName(Object.assign({ id: d.id }, d.data())); })
           .filter(function (b) { return !b.hidden; });
         drawPkMarkers();
         if (presetId) {
@@ -4067,7 +4091,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     if (homeCache.length) { rpBuildings = homeCache.slice(); paintRpList(); }
     if (!db) return;
     db.collection("buildings").limit(2000).get().then(function (snap) {
-      rpBuildings = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      rpBuildings = snap.docs.map(function (d) { return fixName(Object.assign({ id: d.id }, d.data())); });
       rpBuildings.sort(function (x, y) { return String(y.lastReportAt || "").localeCompare(String(x.lastReportAt || "")); });
       paintRpList();
     }).catch(function () { paintRpList(); });
