@@ -703,6 +703,9 @@
   .hl-more { display: block; width: calc(100% - 16px); margin: 8px 8px 4px; padding: 9px 12px; border: 1px dashed var(--dash); border-radius: 10px; background: rgba(255,255,255,.6); color: var(--accent-strong); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; }
   .hl-more:hover { background: #fff; }
   .hl-dot { width: 7px; height: 7px; }
+  .lp-row { display: flex; align-items: center; gap: 8px; }
+  .lp-row select { flex: 1; min-width: 0; }
+  .lp-sep { color: var(--ink-muted); font-weight: 700; }
   .mk-sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; border: 1px solid rgba(0,0,0,.35); }
   .hs-count b { font-family: var(--mono); }
   .hs-panel .section-h h3, .hex-title { letter-spacing: -0.02em; }
@@ -817,15 +820,15 @@
     transition: opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1), filter .6s ease; }
   #splash.out { opacity: 0; transform: scale(1.04); filter: blur(6px); pointer-events: none; }
   .sp-inner { text-align: center; display: flex; flex-direction: column; align-items: center; }
-  .sp-fish-wrap { position: relative; width: 190px; height: 170px; margin-bottom: 18px; opacity: 0; animation: spIn .9s .1s ease forwards; }
+  .sp-fish-wrap { position: relative; width: 190px; height: 170px; margin-bottom: 18px; opacity: 0; animation: spIn .5s 0s ease forwards; }
   .sp-fish { width: 190px; height: auto; opacity: .55; filter: drop-shadow(0 10px 18px rgba(76,56,140,.18)); animation: swim 3.6s ease-in-out infinite; }
   .sp-shadow { position: absolute; left: 50%; bottom: 0; width: 110px; height: 12px; margin-left: -55px; border-radius: 50%; background: radial-gradient(closest-side, rgba(76,56,140,.18), transparent); animation: shadowPulse 3.6s ease-in-out infinite; }
   .sp-bubble { position: absolute; border-radius: 50%; border: 1.5px solid rgba(124,92,196,.35); background: rgba(255,255,255,.5); animation: bubble 3.2s ease-in infinite; }
   .sp-bubble.b1 { width: 10px; height: 10px; left: 18px; top: 70px; animation-delay: .2s; }
   .sp-bubble.b2 { width: 7px; height: 7px; left: 8px; top: 92px; animation-delay: 1.1s; }
   .sp-bubble.b3 { width: 13px; height: 13px; left: 28px; top: 100px; animation-delay: 2s; }
-  .sp-word { font-family: var(--serif); font-weight: 700; font-size: clamp(2.6rem, 9vw, 3.6rem); letter-spacing: -0.02em; color: var(--ink); margin: 0; opacity: 0; animation: spIn .8s .35s ease forwards; }
-  .sp-tag { margin: 14px 0 0; font-size: 1.02rem; font-weight: 700; line-height: 1.55; color: var(--ink); opacity: 0; animation: spIn .8s .55s ease forwards; }
+  .sp-word { font-family: var(--serif); font-weight: 700; font-size: clamp(2.6rem, 9vw, 3.6rem); letter-spacing: -0.02em; color: var(--ink); margin: 0; opacity: 0; animation: spIn .5s .15s ease forwards; }
+  .sp-tag { margin: 14px 0 0; font-size: 1.02rem; font-weight: 700; line-height: 1.55; color: var(--ink); opacity: 0; animation: spIn .5s .3s ease forwards; }
   .sp-start { margin-top: 44px; border: 0; background: var(--ink); color: #fff; font-weight: 700; font-size: 1rem; padding: 16px 30px; border-radius: 999px; cursor: pointer; box-shadow: 0 12px 26px -12px rgba(44,40,57,.6); opacity: 0; animation: spIn .8s .8s ease forwards; transition: transform .2s ease, box-shadow .2s ease; }
   .sp-start:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -12px rgba(44,40,57,.7); }
   .sp-start:focus-visible { outline: 3px solid var(--dash); outline-offset: 4px; }
@@ -888,7 +891,6 @@
     </div>
     <h1 class="sp-word">집속사정</h1>
     <p class="sp-tag">살아본 사람만 아는 집 이야기<br>월계1동 실거주 아카이브</p>
-    <button type="button" class="sp-start" id="sp-start">시작하기</button>
   </div>
 </div>
 <script>
@@ -901,7 +903,9 @@
       document.documentElement.classList.remove("sp-lock");
       setTimeout(function () { if (sp && sp.parentNode) sp.parentNode.removeChild(sp); }, 700);
     }
-    document.getElementById("sp-start").addEventListener("click", go);
+    // 우럭이 뜨고(0.5초) 1초 뒤 자동으로 홈 화면으로. 누르거나 키를 눌러도 바로 넘어감
+    setTimeout(go, 1500);
+    sp.addEventListener("click", go);
     document.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === "Escape") go(); });
   })();
 </script>
@@ -1351,6 +1355,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   }
   var TYPE_COLORS = { "원룸": "#dccbf6", "투룸": "#d4ebb6", "오피스텔": "#d3e8f8", "빌라": "#c4e6e0", "기타": "#f7d9e5" };
   function typeColor(t) { return TYPE_COLORS[t] || TYPE_COLORS["기타"]; }
+  function lpYearOptions(ph, withNow) {
+    var y = new Date().getFullYear(), h = '<option value="">' + ph + "</option>";
+    if (withNow) h += '<option value="현재">현재 거주 중</option>';
+    for (var i = y; i >= y - 25; i--) h += '<option value="' + i + '">' + i + "년</option>";
+    return h;
+  }
   function shortName(n) { n = String(n || "건물"); return n.length > 9 ? n.slice(0, 8) + "…" : n; }
   function shortPrice(b) {
     var d = b.lastDealType || "월세";
@@ -2270,10 +2280,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
           var it = g[0];
           var sel = !!(mapSelection && mapSelection.length === 1 && mapSelection[0] === it.b.id);
           var tc = typeColor(it.b.buildingType);
-          var estP = !it.b.lastReportAt && it.b.rt ? rtEstPrice(it.b) : "";
           var html = it.b.lastReportAt
-            ? '<span class="mk-pin' + (sel ? " sel" : "") + '" style="border-color:' + tc + ';background:' + (sel ? "#7c5cc4" : tc) + '">' + esc(shortPrice(it.b)) + "</span>"
-            : estP ? '<span class="mk-pin est' + (sel ? " sel" : "") + '" style="border-color:' + tc + '" title="국토부 실거래 추정치">' + esc(estP) + "</span>"
+            ? '<span class="mk-pin' + (sel ? " sel" : "") + '" style="border-color:' + tc + ';background:' + (sel ? "#7c5cc4" : tc) + '">' + esc(shortName(it.b.name)) + "</span>"
             : '<span class="mk-pin empty' + (sel ? " sel" : "") + '" style="border-color:' + tc + '"><i class="mk-sw" style="background:' + tc + '"></i>' + esc(shortName(it.b.name)) + "</span>";
           homeMarks.push(homeMap.addHtml(it.ll, html, {
             title: it.b.name || "", z: sel ? 10 : 2,
@@ -2300,7 +2308,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       var hint = document.getElementById("map-hint");
       var noPos = noPosAll;
       if (hint) {
-        hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 이름·가격 표시를 누르면 해당 건물이 아래에 떠요." +
+        hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 건물 이름 표시를 누르면 해당 건물이 아래에 떠요." +
           (noPos > 0
             ? (geoPending()
                 ? " (주소로 위치를 찾는 중인 건물 " + noPos + "곳)"
@@ -2707,7 +2715,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       var elD = document.getElementById("detail-map");
       if (!ll || !elD) return;
       var mobile = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-      createWMap(elD, { center: ll, zoom: 16, zoomControl: false, draggable: !mobile, zoomable: false }).then(function (m) {
+      createWMap(elD, { center: ll, zoom: 16, zoomControl: true, draggable: !mobile, zoomable: !mobile }).then(function (m) {
         if (!document.body.contains(elD)) { m.destroy(); return; }
         detailMap = m;
         m.setView(ll, 16);
@@ -3129,7 +3137,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
             '<div class="map-hint" style="margin-top:4px">별을 누르거나 끌어서 0.5점 단위로 고를 수 있어요. 별 왼쪽 절반을 누르면 반 개예요.</div>' +
             '<div class="field-error" id="err-rating" style="display:none">별점을 선택해주세요.</div>' +
           "</div>" +
-          '<div class="field"><label class="main">거주 시기 (선택)</label><input type="text" id="livedPeriod" placeholder="예: 2024~2025"></div>' +
+          '<div class="field"><label class="main">거주 시기 (선택)</label>' +
+            '<div class="lp-row"><select id="lp-from" aria-label="입주 연도">' + lpYearOptions("입주 연도") + '</select>' +
+            '<span class="lp-sep">~</span><select id="lp-to" aria-label="퇴거 연도">' + lpYearOptions("퇴거 연도", true) + '</select></div>' +
+            '<input type="hidden" id="livedPeriod"></div>' +
           '<div class="field"><label class="main">거주 후기 (선택)</label><textarea id="note" rows="5" placeholder="살면서 좋았던 점, 아쉬웠던 점, 계약 전에 알았으면 좋았을 것들을 자유롭게 적어주세요.&#10;예: 채광은 좋은데 겨울엔 외풍이 있어서 난방비가 꽤 나왔어요. 집주인분은 수리 요청에 빨리 응해주셨어요."></textarea></div>' +
         "</fieldset>" +
 
@@ -3252,6 +3263,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         setVal("noise", ed.noise || "모르겠음");
         setVal("parking", ed.parking || "모르겠음");
         setVal("livedPeriod", ed.livedPeriod || "");
+        lpSet(ed.livedPeriod || "");
         setVal("note", ed.note || "");
         if (typeof ed.rating === "number") { setVal("rating", ed.rating); syncRating(); }
         setVal("residencyStatus", ed.residencyStatus || "");
@@ -3420,6 +3432,21 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     });
 
     function val(id) { return document.getElementById(id).value; }
+    // 거주 시기: 입주 연도 ~ 퇴거 연도(또는 현재 거주 중) → "2024~2025" / "2024~현재" / "2025"
+    function lpValue() {
+      var f = (document.getElementById("lp-from") || {}).value || "", t = (document.getElementById("lp-to") || {}).value || "";
+      if (!f && !t) return "";
+      if (!f) return t === "현재" ? "" : t;
+      if (!t || t === f) return f;
+      if (t !== "현재" && Number(t) < Number(f)) return t + "~" + f;
+      return f + "~" + t;
+    }
+    function lpSet(str) {
+      var m = String(str || "").match(/(\d{4})(?:\s*[~\-]\s*(\d{4}|현재))?/);
+      var fe = document.getElementById("lp-from"), te = document.getElementById("lp-to");
+      if (!m || !fe || !te) return;
+      fe.value = m[1]; te.value = m[2] || "";
+    }
     function numOrNull(id) { var v = val(id); if (v === "") return null; var n = Number(v); return isNaN(n) ? null : n; }
 
     function submitReport() {
@@ -3493,7 +3520,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         mold: val("mold") || "모르겠음",
         noise: val("noise") || "모르겠음",
         parking: val("parking") || "모르겠음",
-        livedPeriod: val("livedPeriod").trim(),
+        livedPeriod: lpValue(),
         note: val("note").trim(),
         rating: Number(val("rating")) > 0 ? Number(val("rating")) : null,
         residencyStatus: val("residencyStatus") || "모르겠음",
