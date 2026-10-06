@@ -270,6 +270,8 @@
   .star-wrap { position: relative; display: inline-block; }
   .star-wrap input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
   .star-wrap:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+  .ov-section { margin-top: 4px; }
+  .ov-lock { margin-top: 16px; }
   .bld-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .bld-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
   .bld-chip i { font-style: normal; font-weight: 500; color: var(--ink-muted); }
@@ -2382,8 +2384,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
           '<div class="addr">' + (buildingData.zonecode ? "[" + esc(buildingData.zonecode) + "] " : "") + esc(buildingData.address || "주소 미상") + "</div>" +
           bldInfoHtml(buildingData) +
         "</div>" +
-        hexCardHtml(shown) +
-        '<div class="stat-row">' +
+        rtCardHtml(buildingData) +
+        ((unlocked || adminMode)
+          ? '<section class="ov-section" id="b-overview">' +
+              hexCardHtml(shown) +
+              '<div class="stat-row">' +
           '<div class="stat"><div class="k">제보 수</div><div class="v">' + shown.length + "건</div></div>" +
           stats.priceTiles.map(function (t) {
             return '<div class="stat"><div class="k">' + esc(t.k) + '</div><div class="v">' + esc(t.v) + "</div></div>";
@@ -2397,11 +2402,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
             return esc(fmtDate(buildingData.lastReportAt));
           })() + "</div></div>" +
         "</div>" +
-        rtCardHtml(buildingData) +
+              (stats.tags.length ? '<div class="chip-row" style="margin-top:14px">' + stats.tags.map(function (t) {
+                return '<span class="chip ' + t.cls + '">' + esc(t.label) + "</span>";
+              }).join("") + "</div>" : "") +
+            "</section>"
+          : '<div class="lock-banner ov-lock"><div class="lock-banner-icon">🔒</div>' +
+              '<div class="lock-banner-text"><b>이 건물 한눈에 보기는 제보한 분께만 열려요.</b><br>제보 1건이면 이 건물뿐 아니라 모든 건물의 상세 정보를 볼 수 있어요.</div>' +
+              '<a class="btn primary" href="#/submit/' + encodeURIComponent(buildingData._id) + '">제보하고 열기</a></div>') +
+
         (adminMode ? adminBuildingBar() : "") +
-        (stats.tags.length ? '<div class="chip-row" style="margin-top:14px">' + stats.tags.map(function (t) {
-          return '<span class="chip ' + t.cls + '">' + esc(t.label) + "</span>";
-        }).join("") + "</div>" : "") +
         (buildingLatLng(buildingData)
           ? '<div id="detail-map" class="map-box"></div>' +
             (isAdmin() ? '<div style="text-align:right;margin-top:6px"><button type="button" class="btn ghost" id="loc-set-open" style="font-size:0.8rem">📍 위치 수정</button></div>' : "")
