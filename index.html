@@ -2334,9 +2334,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     dealSel.addEventListener("change", paint);
 
     if (!db) { paint(); return; }
-    var q = db.collection("buildings").orderBy("lastReportAt", "desc").limit(1500);
+    var q = db.collection("buildings").limit(2000);
     var unsub = q.onSnapshot(function (snap) {
       homeCache = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      homeCache.sort(function (x, y) { return String(y.lastReportAt || "").localeCompare(String(x.lastReportAt || "")); });
       paint();
     }, function (e) {
       dbState = "unavailable";
@@ -4000,8 +4001,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   function loadRpBuildings() {
     if (homeCache.length) { rpBuildings = homeCache.slice(); paintRpList(); }
     if (!db) return;
-    db.collection("buildings").orderBy("lastReportAt", "desc").limit(300).get().then(function (snap) {
+    db.collection("buildings").limit(2000).get().then(function (snap) {
       rpBuildings = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      rpBuildings.sort(function (x, y) { return String(y.lastReportAt || "").localeCompare(String(x.lastReportAt || "")); });
       paintRpList();
     }).catch(function () { paintRpList(); });
   }
