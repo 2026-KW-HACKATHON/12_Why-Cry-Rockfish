@@ -656,9 +656,9 @@
   .home-split { width: 100vw; margin-left: calc(50% - 50vw); margin-top: -28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(400px, 560px); align-items: start; }
   .hs-hero { position: sticky; top: 66px; height: calc(100vh - 66px); min-height: 520px; overflow: hidden; }
   .hs-photo { position: absolute; inset: 0;
-    -webkit-mask-image: radial-gradient(ellipse 64% 74% at 42% 36%, #000 50%, rgba(0,0,0,.5) 74%, transparent 98%);
-    mask-image: radial-gradient(ellipse 64% 74% at 42% 36%, #000 50%, rgba(0,0,0,.5) 74%, transparent 98%); }
-  .hs-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 62% 35%; display: block; image-rendering: auto; filter: saturate(1.08) brightness(1.04); animation: kenburns 26s ease-in-out infinite alternate; transform-origin: 60% 40%; }
+    -webkit-mask-image: radial-gradient(ellipse 72% 92% at 42% 58%, #000 52%, rgba(0,0,0,.5) 76%, transparent 99%);
+    mask-image: radial-gradient(ellipse 72% 92% at 42% 58%, #000 52%, rgba(0,0,0,.5) 76%, transparent 99%); }
+  .hs-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 62% 30%; display: block; image-rendering: auto; filter: saturate(1.08) brightness(1.04); animation: kenburns 26s ease-in-out infinite alternate; transform-origin: 60% 40%; }
   .hs-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,0) 45%, rgba(214,196,248,.35) 78%, rgba(255,255,255,.2) 100%), radial-gradient(ellipse at 20% 15%, rgba(255,255,255,.35), transparent 45%); pointer-events: none; }
   @keyframes kenburns { from { transform: scale(1.08) translate(-1%, 1%); } to { transform: scale(1) translate(0, 0); } }
   .hs-copy { position: absolute; left: clamp(24px, 6vw, 88px); right: 24px; bottom: clamp(28px, 7vh, 72px); color: var(--ink); }
@@ -703,6 +703,26 @@
   .foot-mark .fill { fill: url(#fmGrad); opacity: .55; }
   .foot-mark .line { fill: none; stroke: #b79cf0; stroke-width: 1.4; stroke-dasharray: 2 5; stroke-linecap: round; animation: dashmove 18s linear infinite; }
   @keyframes dashmove { to { stroke-dashoffset: -280; } }
+  .pf { margin-top: 10px; padding: 12px 14px 10px; border: 1.5px dashed var(--dash, #cfc4ee); border-radius: 14px; background: var(--surface, #fff); }
+  .pf.on { border-style: solid; border-color: #9b7fe0; background: #faf7ff; }
+  .pf-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 118px; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .pf-k { font-weight: 800; font-size: 0.86rem; color: var(--ink, #2c2839); }
+  .pf-v { font-size: 0.82rem; text-align: right; color: #5b3fb3; white-space: nowrap; }
+  .pf-range { position: relative; height: 26px; --a: 0%; --b: 100%; }
+  .pf-range::before { content: ""; position: absolute; left: 0; right: 0; top: 11px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #e6e1f3 var(--a), #7c5cc4 var(--a), #7c5cc4 var(--b), #e6e1f3 var(--b)); }
+  .pf-range input[type=range] { position: absolute; left: 0; top: 0; width: 100%; height: 26px; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+  .pf-range input[type=range]::-webkit-slider-runnable-track { background: transparent; height: 26px; }
+  .pf-range input[type=range]::-moz-range-track { background: transparent; }
+  .pf-range input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 18px; height: 18px; margin-top: 4px; border-radius: 50%; background: #fff; border: 3px solid #7c5cc4; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  .pf-range input[type=range]::-moz-range-thumb { pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid #7c5cc4; cursor: pointer; }
+  .pf-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.74rem; color: var(--ink-muted, #777); }
+  .pf-reset { border: 1px solid #cfc4ee; background: #fff; color: #5b3fb3; border-radius: 999px; padding: 4px 11px; font: inherit; font-weight: 700; cursor: pointer; flex: none; }
+  .pf-badge { font-size: 0.74rem; font-weight: 700; color: #5b3fb3; background: #f1ebfc; border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
+  .hs-notice { position: absolute; left: 20px; top: 18px; z-index: 4; width: min(360px, calc(100% - 40px)); max-height: 42%; overflow-y: auto; padding: 12px 14px; border-radius: 16px; background: rgba(255,255,255,.86); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 10px 30px -14px rgba(40,30,90,.45); border: 1px solid rgba(255,255,255,.9); transition: opacity .35s ease; }
+  .hs-notice-h { font-weight: 800; font-size: 0.95rem; color: var(--ink, #2c2839); }
+  .hs-notice .notice-list { margin-top: 8px; }
+  .hs-notice .empty { margin: 0 !important; padding: 6px 0 2px !important; border: 0; background: none; font-size: 0.82rem; text-align: left; }
+  .hs-hero.map-on .hs-notice, .hs-hero.detail-on .hs-notice { opacity: 0; pointer-events: none; }
   .foot-line { border: 0; border-top: 1.5px dashed var(--dash); margin: 6px auto 14px; max-width: 1240px; }
   .foot-copy { font-size: 0.82rem; color: var(--ink-muted); }
   @media (prefers-reduced-motion: reduce) {
@@ -980,16 +1000,6 @@
 
 <main class="wrap" id="app"></main>
 <footer class="site-foot">
-  <svg class="foot-mark" viewBox="0 0 1100 230" role="img" aria-label="집속사정">
-    <defs>
-      <linearGradient id="fmGrad" x1="0" x2="1" y1="0" y2="1">
-        <stop offset="0" stop-color="#e3d6fb"/><stop offset=".45" stop-color="#cfe3f7"/><stop offset=".75" stop-color="#d7ecc4"/><stop offset="1" stop-color="#ead9fa"/>
-        <animateTransform attributeName="gradientTransform" type="translate" values="-0.3 0; 0.3 0; -0.3 0" dur="16s" repeatCount="indefinite"/>
-      </linearGradient>
-    </defs>
-    <text class="fill" x="550" y="185" text-anchor="middle" font-size="200">집속사정</text>
-    <text class="line" x="550" y="185" text-anchor="middle" font-size="200">집속사정</text>
-  </svg>
   <hr class="foot-line">
   <div class="foot-copy">© 2026 집속사정 · Why-Cry-Rockfish · 월계1동 실거주 아카이브</div>
 </footer>
@@ -2212,6 +2222,14 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     });
     return order.map(function (k) { return { k: k, rows: groups[k] }; });
   }
+  var PF_DMAX = 5000, PF_RMAX = 150;
+  // 월세 기준 가격: 거주자 제보(월세) → 이 건물 실거래 → 같은 길 실거래
+  function monthlyOf(b) {
+    if (b.lastReportAt && (b.lastDealType || "월세") === "월세" && b.lastDeposit != null && b.lastRent != null) return { d: Number(b.lastDeposit), r: Number(b.lastRent) };
+    var rs = rtLatest(b.rt || b.rtRoad);
+    if (rs.wol && rs.wol.a != null && rs.wol.r != null) return { d: Number(rs.wol.a), r: Number(rs.wol.r) };
+    return null;
+  }
   var ROW_CAP = 30, moreLists = {};
   function homeRowHtml(b, i) {
     var id = b.id || b._id;
@@ -2243,6 +2261,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
           "</button>" +
           '<button type="button" class="hs-map-close" id="hs-map-close" aria-label="지도 닫고 사진으로">✕ 지도 닫기</button>' +
           '<div class="hs-detail" id="hs-detail" aria-live="polite"></div>' +
+          '<div class="hs-notice"><div class="hs-notice-h">📌 공지사항</div><div id="notice-list" class="notice-list"></div></div>' +
         "</section>" +
         '<section class="hs-panel">' +
           '<div class="hs-panel-top">' +
@@ -2253,6 +2272,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
             '<select id="ftype">' + options(ROOM_TYPES, "전체 유형") + "</select>" +
             '<select id="fdeal">' + options(DEAL_TYPES, "전체 거래") + "</select>" +
           "</div>" +
+          '<div class="pf" id="pf">' +
+            '<div class="pf-row"><span class="pf-k">보증금</span><div class="pf-range" id="pf-dr"><input type="range" id="pf-dmin" min="0" max="' + PF_DMAX + '" step="100" value="0" aria-label="보증금 최소"><input type="range" id="pf-dmax" min="0" max="' + PF_DMAX + '" step="100" value="' + PF_DMAX + '" aria-label="보증금 최대"></div><b class="pf-v" id="pf-dv">전체</b></div>' +
+            '<div class="pf-row"><span class="pf-k">월세</span><div class="pf-range" id="pf-rr"><input type="range" id="pf-rmin" min="0" max="' + PF_RMAX + '" step="5" value="0" aria-label="월세 최소"><input type="range" id="pf-rmax" min="0" max="' + PF_RMAX + '" step="5" value="' + PF_RMAX + '" aria-label="월세 최대"></div><b class="pf-v" id="pf-rv">전체</b></div>' +
+            '<div class="pf-foot"><span id="pf-note">막대를 움직여 원하는 보증금·월세 범위의 집만 볼 수 있어요.</span><button type="button" class="pf-reset" id="pf-reset">초기화</button></div>' +
+          "</div>" +
           (hasContributed() ? "" :
             '<div class="banner hs-banner">🔒 난방비·채광·소음 같은 상세 정보는 제보 1건을 남기면 모든 건물에서 볼 수 있어요. ' +
             '<a href="#/submit" style="color:var(--accent-strong);font-weight:700">지금 제보하기 →</a></div>') +
@@ -2261,10 +2285,6 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
             '<div class="map-hint" id="map-hint"></div>' +
             '<div class="map-panel-h" id="map-list-h"></div>' +
             '<div id="map-list" class="hl-list hl-flat"></div>' +
-          "</div>" +
-          '<div class="notice-section">' +
-            '<div class="section-h"><h3>📌 공지사항</h3></div>' +
-            '<div id="notice-list" class="notice-list"></div>' +
           "</div>" +
         "</section>" +
       "</div>";
@@ -2586,16 +2606,22 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
 
     function paint() {
       var q = qInput.value.trim().toLowerCase();
+      var pf = readPf();
       var t = typeSel.value;
       var dl = dealSel.value;
       var rows = homeCache.filter(function (b) {
         var okQ = !q || (b.name || "").toLowerCase().indexOf(q) > -1 || (b.address || "").toLowerCase().indexOf(q) > -1 || (b.zonecode || "").indexOf(q) > -1;
         var okT = !t || b.buildingType === t;
         var okD = !dl || (b.lastDealType || "월세") === dl;
-        return okQ && okT && okD;
+        var okP = true;
+        if (pf.on) {
+          var m = monthlyOf(b);
+          okP = !!m && m.d >= pf.dmin && (pf.dmax >= PF_DMAX || m.d <= pf.dmax) && m.r >= pf.rmin && (pf.rmax >= PF_RMAX || m.r <= pf.rmax);
+        }
+        return okQ && okT && okD && okP;
       });
       var cntEl = document.getElementById("hs-count");
-      if (cntEl) cntEl.innerHTML = "<b>" + rows.length + "</b>곳의 건물" + (rows.length !== homeCache.length ? ' <span class="muted">/ 전체 ' + homeCache.length + "곳</span>" : "");
+      if (cntEl) cntEl.innerHTML = "<b>" + rows.length + "</b>곳의 건물" + (rows.length !== homeCache.length ? ' <span class="muted">/ 전체 ' + homeCache.length + "곳</span>" : "") + (pf.on ? ' <span class="pf-badge">💰 가격 필터 적용 중</span>' : "");
       if (dbState === "unavailable") {
         listEl.style.display = ""; mapWrap.style.display = "none";
         listEl.innerHTML = '<div class="banner">지금은 데이터를 불러올 수 없어요. 같은 조직 계정으로 로그인되어 있는지 확인해주세요.</div>';
@@ -2665,6 +2691,37 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       hydrateSkyThumbs(inner);
     });
 
+    // ---- 보증금·월세 범위 필터 ----
+    function pfVal(id) { return Number(document.getElementById(id).value); }
+    function fmtMan(n) { return n >= 10000 ? (Math.round(n / 1000) / 10) + "억" : n.toLocaleString("ko-KR") + "만"; }
+    function readPf() {
+      var dmin = pfVal("pf-dmin"), dmax = pfVal("pf-dmax"), rmin = pfVal("pf-rmin"), rmax = pfVal("pf-rmax");
+      if (dmin > dmax) { var t1 = dmin; dmin = dmax; dmax = t1; }
+      if (rmin > rmax) { var t2 = rmin; rmin = rmax; rmax = t2; }
+      return { dmin: dmin, dmax: dmax, rmin: rmin, rmax: rmax, on: dmin > 0 || dmax < PF_DMAX || rmin > 0 || rmax < PF_RMAX };
+    }
+    function syncPfUi() {
+      var p = readPf();
+      function lab(a, b, max) { return (a === 0 && b >= max) ? "전체" : fmtMan(a) + " ~ " + (b >= max ? fmtMan(max) + "+" : fmtMan(b)); }
+      document.getElementById("pf-dv").textContent = lab(p.dmin, p.dmax, PF_DMAX);
+      document.getElementById("pf-rv").textContent = lab(p.rmin, p.rmax, PF_RMAX);
+      document.getElementById("pf-dr").style.setProperty("--a", (p.dmin / PF_DMAX * 100) + "%");
+      document.getElementById("pf-dr").style.setProperty("--b", (p.dmax / PF_DMAX * 100) + "%");
+      document.getElementById("pf-rr").style.setProperty("--a", (p.rmin / PF_RMAX * 100) + "%");
+      document.getElementById("pf-rr").style.setProperty("--b", (p.rmax / PF_RMAX * 100) + "%");
+      document.getElementById("pf").classList.toggle("on", p.on);
+      document.getElementById("pf-note").textContent = p.on ? "월세 가격 정보(제보·실거래)가 있는 집만 보여요." : "막대를 움직여 원하는 보증금·월세 범위의 집만 볼 수 있어요.";
+    }
+    var pfTimer = null;
+    ["pf-dmin", "pf-dmax", "pf-rmin", "pf-rmax"].forEach(function (id) {
+      document.getElementById(id).addEventListener("input", function () { syncPfUi(); clearTimeout(pfTimer); pfTimer = setTimeout(paint, 120); });
+    });
+    document.getElementById("pf-reset").addEventListener("click", function () {
+      document.getElementById("pf-dmin").value = 0; document.getElementById("pf-dmax").value = PF_DMAX;
+      document.getElementById("pf-rmin").value = 0; document.getElementById("pf-rmax").value = PF_RMAX;
+      syncPfUi(); paint();
+    });
+    syncPfUi();
     qInput.addEventListener("input", paint);
     typeSel.addEventListener("change", paint);
     dealSel.addEventListener("change", paint);
