@@ -595,6 +595,13 @@
 
   /* ---- AI 도우미 챗봇 ---- */
   .ai-fab { position: fixed; left: 16px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 1100; display: flex; align-items: center; gap: 7px; border: 0; cursor: pointer; color: #fff; font: inherit; font-weight: 800; font-size: 0.88rem; padding: 12px 16px; border-radius: 999px; background: linear-gradient(135deg, #7c5cc4, #4f9bd9); box-shadow: 0 8px 22px -8px rgba(60,40,140,.65); }
+  .ai-fish { width: 26px; height: 22px; flex: none; }
+  .ai-title { display: flex; align-items: center; gap: 9px; }
+  .ai-title .ai-fish { width: 34px; height: 28px; background: #fff; border-radius: 50%; padding: 3px; box-sizing: content-box; }
+  .ai-fab .ai-fish { background: #fff; border-radius: 50%; padding: 3px; box-sizing: content-box; width: 24px; height: 20px; }
+  .walk-tag { font-size: 0.72rem; font-weight: 600; color: var(--ink-muted, #777); margin-left: 8px; white-space: nowrap; letter-spacing: 0; }
+  .b-head h2 .walk-tag { display: block; margin: 4px 0 0; font-size: 0.8rem; }
+  .hl-name .walk-tag { margin-left: 0; flex: none; font-size: 0.66rem; font-weight: 600; }
   .ai-fab:hover { transform: translateY(-2px); }
   .ai-panel { position: fixed; left: 16px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 1200; width: 380px; max-width: calc(100vw - 32px); height: min(560px, calc(100vh - 110px)); background: var(--surface, #fff); border: 1px solid var(--line, #ddd); border-radius: 18px; box-shadow: 0 24px 60px -20px rgba(30,20,70,.55); display: none; flex-direction: column; overflow: hidden; }
   .ai-panel.open { display: flex; }
@@ -980,9 +987,9 @@
 </footer>
 <div id="toast"></div>
 
-<button type="button" class="ai-fab" id="ai-fab" aria-label="AI 집 찾기 도우미 열기"><span>🤖</span>AI 도우미</button>
-<div class="ai-panel" id="ai-panel" role="dialog" aria-label="AI 집 찾기 도우미">
-  <div class="ai-head"><div><b>🤖 집속사정 AI 도우미</b><small>월계1동 건물 정보를 바탕으로 답해요 · 참고용</small></div><button type="button" class="ai-x" id="ai-x" aria-label="닫기">✕</button></div>
+<button type="button" class="ai-fab" id="ai-fab" aria-label="우럭 AI 열기"><svg class="ai-fish" viewBox="-1 2 35 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 9 L17 3 L19.5 10.5 Z" fill="#3d4f5c"/><path d="M27 17 L32.5 10.5 L32.5 23.5 Z" fill="#3d4f5c"/><ellipse cx="16" cy="17.5" rx="12.5" ry="8.2" fill="#5b7386"/><path d="M7 22.5 Q4 27 1.5 26 Q4.5 23 5.5 20 Z" fill="#e0a563"/><circle cx="9.3" cy="15.5" r="4.3" fill="#f5f8fa"/><circle cx="8.5" cy="15.5" r="2.7" fill="#182029"/><circle cx="7.5" cy="14.3" r="0.9" fill="#ffffff"/><path d="M4.2 19.5 Q6.5 21.5 9.5 20.3" stroke="#33424c" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>우럭 AI</button>
+<div class="ai-panel" id="ai-panel" role="dialog" aria-label="우럭 AI">
+  <div class="ai-head"><div class="ai-title"><svg class="ai-fish" viewBox="-1 2 35 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 9 L17 3 L19.5 10.5 Z" fill="#3d4f5c"/><path d="M27 17 L32.5 10.5 L32.5 23.5 Z" fill="#3d4f5c"/><ellipse cx="16" cy="17.5" rx="12.5" ry="8.2" fill="#5b7386"/><path d="M7 22.5 Q4 27 1.5 26 Q4.5 23 5.5 20 Z" fill="#e0a563"/><circle cx="9.3" cy="15.5" r="4.3" fill="#f5f8fa"/><circle cx="8.5" cy="15.5" r="2.7" fill="#182029"/><circle cx="7.5" cy="14.3" r="0.9" fill="#ffffff"/><path d="M4.2 19.5 Q6.5 21.5 9.5 20.3" stroke="#33424c" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg><div><b>우럭 AI</b><small>월계1동 건물 정보를 바탕으로 답해요 · 참고용</small></div></div><button type="button" class="ai-x" id="ai-x" aria-label="닫기">✕</button></div>
   <div class="ai-msgs" id="ai-msgs"></div>
   <div class="ai-note">AI는 틀릴 수 있어요. 실거래가는 국토부 신고 기준 추정치이니 건물 페이지에서 꼭 확인하세요.</div>
   <form class="ai-form" id="ai-form"><input type="text" id="ai-input" maxlength="200" placeholder="예: 월세 50 이하 원룸 알려줘" autocomplete="off"><button type="submit" id="ai-send">보내기</button></form>
@@ -1226,9 +1233,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
   // ---- 육각형(레이더) 요약: 제보들의 응답을 0~5점으로 바꿔 평균 ----
   var HEX_AXES = [
     { k: "만족도", f: function (r) { return typeof r.rating === "number" && r.rating > 0 ? r.rating : null; } },
-    { k: "난방비 절약", f: function (r) { return ({ "매우 낮음": 5, "낮음": 4, "보통": 3, "높음": 2, "매우 높음": 1 })[r.heatingFeel] || null; } },
+    { k: "난방비 체감", f: function (r) { return ({ "매우 낮음": 5, "낮음": 4, "보통": 3, "높음": 2, "매우 높음": 1 })[r.heatingFeel] || null; } },
     { k: "채광", f: function (r) { return ({ "매우 밝음": 5, "밝음": 4, "보통": 3, "어두움": 2, "매우 어두움": 1 })[r.lightLevel] || null; } },
-    { k: "조용함", f: function (r) { return ({ "조용함": 5, "보통": 3, "시끄러움": 1 })[r.noise] || null; } },
+    { k: "방음", f: function (r) { return ({ "조용함": 5, "보통": 3, "시끄러움": 1 })[r.noise] || null; } },
     { k: "곰팡이 없음", f: function (r) { return ({ "없음": 5, "약간 있음": 3, "심함": 1 })[r.mold] || null; } },
     { k: "온수", f: function (r) { return ({ "문제없음": 5, "저녁 시간대 약해짐": 3, "자주 끊김": 1 })[r.hotWater] || null; } }
   ];
@@ -1360,6 +1367,20 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     b09: [37.6232, 127.0556], b10: [37.6267, 127.0553], b11: [37.6176, 127.0610], b12: [37.6200, 127.0572],
     b13: [37.6268, 127.0560], b14: [37.6205, 127.0605], b15: [37.6252, 127.0585]
   };
+  // ---- 도보 시간 (광운대역 / 광운대학교): 직선거리 × 1.35(길 보정) ÷ 분당 75m, 추정치 ----
+  var LM_STATION = [37.6238, 127.0614], LM_UNIV = [37.6199, 127.0587];
+  function walkMin(ll, lm) {
+    var R = 6371000, r = Math.PI / 180, dLat = (lm[0] - ll[0]) * r, dLng = (lm[1] - ll[1]) * r;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(ll[0] * r) * Math.cos(lm[0] * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    var d = 2 * R * Math.asin(Math.sqrt(a));
+    return Math.max(1, Math.round(d * 1.35 / 75));
+  }
+  function walkTagHtml(b, short) {
+    var ll = buildingLatLng(b);
+    if (!ll) return "";
+    var s = walkMin(ll, LM_STATION), u = walkMin(ll, LM_UNIV);
+    return '<span class="walk-tag" title="직선거리 기준 추정이에요">' + (short ? "역 " + s + "분 · 학교 " + u + "분" : "광운대역에서 도보 " + s + "분 · 광운대학교에서 도보 " + u + "분") + "</span>";
+  }
   function buildingLatLng(b) {
     if (b && typeof b.lat === "number" && typeof b.lng === "number") return [b.lat, b.lng];
     var id = b && (b.id || b._id);
@@ -2193,7 +2214,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       '<a class="hl-row' + (id === homeSelectedId ? " sel" : "") + '" data-id="' + esc(id) + '" href="#/building/' + encodeURIComponent(id) + '" style="--i:' + Math.min(i, 18) + '">' +
         '<span class="hl-thumb">' + staticThumbHtml(b) + "</span>" +
         '<span class="hl-main">' +
-          '<span class="hl-name"><i class="hl-dot' + (has ? " on" : "") + '"></i>' + esc(b.name || "이름 없는 건물") + (isAdmin() ? '<button type="button" class="hl-edit" data-edit-name="' + esc(id) + '" title="건물 이름 수정">✏️ 이름</button>' : "") + "</span>" +
+          '<span class="hl-name"><i class="hl-dot' + (has ? " on" : "") + '"></i>' + esc(b.name || "이름 없는 건물") + walkTagHtml(b, true) + (isAdmin() ? '<button type="button" class="hl-edit" data-edit-name="' + esc(id) + '" title="건물 이름 수정">✏️ 이름</button>' : "") + "</span>" +
           '<span class="hl-sub">' + esc(shortAddr(b) || "주소 미상") + " · " + esc(b.buildingType || "기타") + "</span>" +
         "</span>" +
         '<span class="hl-meta">' + (has ? "<b>" + esc(price) + "</b><small>" + esc(relTime(b.lastReportAt)) + " 전</small>" : est ? '<b class="est">' + esc(est) + '<i class="est-tag">추정</i></b><small>' + (b.rt ? "실거래 " + esc(relTime(rtDateIso(b.rt))) + " 전" : "같은 길 시세") + "</small>" : '<small class="wait">제보 없음</small>') + "</span>" +
@@ -2597,7 +2618,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         '<div id="b-hero-slot"></div>' +
         '<div class="b-head">' +
           '<span class="tag">' + esc(buildingData.buildingType || "기타") + "</span>" +
-          "<h2>" + esc(buildingData.name) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
+          "<h2>" + esc(buildingData.name) + walkTagHtml(buildingData, false) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
           '<div class="addr">' + (buildingData.zonecode ? "[" + esc(buildingData.zonecode) + "] " : "") + esc(buildingData.address || "주소 미상") + "</div>" +
           bldInfoHtml(buildingData) +
         "</div>" +
@@ -4179,7 +4200,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     var history = [], busy = false, lastAt = 0, dataCache = null, started = false;
     var DAILY_MAX = 30;
     var SYSTEM =
-      "너는 '집속사정'(광운대 인근 월계1동 실거주 경험 아카이브) 사이트의 AI 집 찾기 도우미야. 한국어로, 친근하지만 간결하게(보통 5문장 이내) 답해.\n" +
+      "너는 '집속사정'(광운대 인근 월계1동 실거주 경험 아카이브) 사이트의 AI 마스코트 '우럭 AI'야. 우럭 물고기 캐릭터로, 스스로를 '우럭'이라고 소개해도 좋아. 한국어로, 친근하지만 간결하게(보통 5문장 이내) 답해.\n" +
       "규칙:\n" +
       "1) 반드시 사용자 메시지에 붙은 [건물 데이터]에 있는 내용만 근거로 답해. 데이터에 없으면 '이 사이트 데이터에는 없어요'라고 말하고 지어내지 마.\n" +
       "2) '실거래(추정)'은 국토부 신고내역 기반 추정치이며 실제 거주자 제보가 아니야. 언급할 때 '국토부 신고 기준 추정'이라고 밝혀. '제보'로 표시된 값만 거주자가 남긴 값이야.\n" +
@@ -4247,7 +4268,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     }
     function start() {
       if (started) return; started = true;
-      add("b", "안녕하세요! 월계1동 건물 정보(건축물대장·국토부 실거래가·거주자 제보)를 바탕으로 집 찾는 걸 도와드려요. 이렇게 물어보세요 👇");
+      add("b", "안녕하세요, 우럭 AI예요! 월계1동 건물 정보(건축물대장·국토부 실거래가·거주자 제보)를 바탕으로 집 찾는 걸 도와드려요. 이렇게 물어보세요 👇");
       var c = document.createElement("div"); c.className = "ai-chips";
       ["월세 50 이하 원룸 추천해줘", "준공 10년 이내 빌라 알려줘", "EXITO빌라 최근 실거래가는?", "제보하면 뭐가 열려요?"].forEach(function (q) {
         var b = document.createElement("button"); b.type = "button"; b.className = "ai-chip"; b.textContent = q;
