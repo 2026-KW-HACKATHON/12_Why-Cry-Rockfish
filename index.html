@@ -742,6 +742,14 @@
   .lp-row { display: flex; align-items: center; gap: 8px; }
   .lp-row select { flex: 1; min-width: 0; }
   .lp-sep { color: var(--ink-muted); font-weight: 700; }
+  .agent-toggle { position: absolute; right: 12px; bottom: 34px; z-index: 6; border: 1px solid #f0c48f; background: #fff; color: #b85f0c; font: inherit; font-weight: 800; font-size: 0.8rem; padding: 7px 12px; border-radius: 999px; cursor: pointer; box-shadow: 0 4px 12px -4px rgba(0,0,0,.35); }
+  .agent-toggle:not(.on) { color: #777; border-color: #ddd; }
+  .mk-agent { display: block; width: 30px; height: 30px; transform: translate(-50%, -100%); cursor: pointer; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+  .mk-agent svg { display: block; width: 100%; height: 100%; }
+  .agent-card { transform: translate(-50%, calc(-100% - 38px)); background: #fff; border: 2px solid #f28c28; border-radius: 12px; padding: 9px 12px; min-width: 170px; max-width: 240px; box-shadow: 0 8px 22px -8px rgba(0,0,0,.45); font-size: 0.8rem; line-height: 1.5; color: #2c2839; white-space: normal; }
+  .agent-card b { display: block; font-size: 0.88rem; }
+  .agent-card a { color: #b85f0c; font-weight: 800; margin-right: 10px; }
+  .agent-card .ag-x { float: right; border: 0; background: none; font-size: 1rem; cursor: pointer; color: #999; margin: -4px -6px 0 6px; }
   .mk-sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; border: 1px solid rgba(0,0,0,.35); }
   .hs-count b { font-family: var(--mono); }
   .hs-panel .section-h h3, .hex-title { letter-spacing: -0.02em; }
@@ -2228,7 +2236,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       '<div class="home-split">' +
         '<section class="hs-hero">' +
           '<div class="hs-photo"><img src="' + HOME_HERO_IMG + '" alt="광운대학교 정문"></div>' +
-          '<div class="hs-mapbox"><div id="home-map"></div></div>' +
+          '<div class="hs-mapbox"><div id="home-map"></div><button type="button" class="agent-toggle on" id="agent-toggle" aria-pressed="true" style="display:none"></button></div>' +
           '<button type="button" class="hs-map-btn" id="hs-map-btn">' +
             '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Zm0 0v13m6-10.5v13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>' +
             "<span>지도로 보기</span>" +
@@ -2329,6 +2337,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         if (!document.getElementById("home-map")) { m.destroy(); return null; }
         homeMap = m;
         m.fitWolgye();
+        setTimeout(loadAgentsOnce, 600);
         var idleTimer = null;
         m.onDragStart(function () { mapUserMoved = true; });
         m.onIdle(function () {
@@ -2338,11 +2347,100 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
         m.onClick(function () {
           if (mapSelection) { mapSelection = null; drawMarkers(); paintMapPanel(); }
         });
-        track(function () { try { m.destroy(); } catch (e) {} homeMap = null; homeMapPromise = null; });
+        track(function () { try { m.destroy(); } catch (e) {} homeMap = null; homeMapPromise = null; agentMarks = []; agentPop = null; });
         return m;
       });
       return homeMapPromise;
     }
+
+    // ---- 근처 부동산(중개업소): 카카오 장소검색으로 찾아 주황색 집 아이콘으로 표시 (브라우저에 2주간 저장) ----
+    var AGENT_HOUSE = '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 3 3 14h4v13h18V14h4L16 3Z" fill="#f28c28" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="13" y="18" width="6" height="9" rx="1" fill="#fff"/></svg>';
+    var agents = null, agentMarks = [], agentPop = null, agentOn = true, agentLoading = false;
+    function agentCacheGet() {
+      try { var o = JSON.parse(localStorage.getItem("wg_agents_v1") || "null"); if (o && o.t && Date.now() - o.t < 14 * 864e5 && o.list && o.list.length) return o.list; } catch (e) {}
+      return null;
+    }
+    function fetchAgents() {
+      var c = agentCacheGet();
+      if (c) return Promise.resolve(c);
+      if (!hasKakaoKey()) return Promise.resolve([]);
+      return loadKakao().then(function (kakao) {
+        var K = kakao.maps, ps = new K.services.Places();
+        var la = WOLGYE1_RING.map(function (p) { return p[0]; }), ln = WOLGYE1_RING.map(function (p) { return p[1]; });
+        var minLa = Math.min.apply(null, la) - 0.003, maxLa = Math.max.apply(null, la) + 0.003, minLn = Math.min.apply(null, ln) - 0.004, maxLn = Math.max.apply(null, ln) + 0.004;
+        var N = 3, cells = [];
+        for (var i = 0; i < N; i++) for (var j = 0; j < N; j++) {
+          cells.push(new K.LatLngBounds(new K.LatLng(minLa + (maxLa - minLa) * i / N, minLn + (maxLn - minLn) * j / N), new K.LatLng(minLa + (maxLa - minLa) * (i + 1) / N, minLn + (maxLn - minLn) * (j + 1) / N)));
+        }
+        var found = {};
+        function run(kind, bounds, page) {
+          return new Promise(function (resolve) {
+            var cb = function (data, status, pg) {
+              if (status === K.services.Status.OK) {
+                data.forEach(function (d) {
+                  if (d.category_group_code === "AG2" || /부동산|공인중개/.test(d.place_name)) {
+                    found[d.id] = { id: d.id, name: d.place_name, addr: d.road_address_name || d.address_name || "", phone: d.phone || "", url: d.place_url || "", lat: Number(d.y), lng: Number(d.x) };
+                  }
+                });
+                resolve(pg && page < pg.last && page < 3);
+              } else resolve(false);
+            };
+            var o = { bounds: bounds, page: page, size: 15 };
+            if (kind === "cat") ps.categorySearch("AG2", cb, o); else ps.keywordSearch("부동산", cb, o);
+          });
+        }
+        var chain = Promise.resolve();
+        cells.forEach(function (b) {
+          ["cat", "kw"].forEach(function (kind) {
+            chain = chain.then(function () {
+              function pageLoop(page) { return run(kind, b, page).then(function (more) { return more ? new Promise(function (r) { setTimeout(r, 120); }).then(function () { return pageLoop(page + 1); }) : null; }); }
+              return pageLoop(1);
+            });
+          });
+        });
+        return chain.then(function () {
+          var list = Object.keys(found).map(function (k) { return found[k]; }).filter(function (a) {
+            return inWolgye1(a.lat, a.lng) || WOLGYE1_RING.some(function (p) { return Math.abs(p[0] - a.lat) < 0.0022 && Math.abs(p[1] - a.lng) < 0.0028; });
+          });
+          if (list.length) { try { localStorage.setItem("wg_agents_v1", JSON.stringify({ t: Date.now(), list: list })); } catch (e) {} }
+          return list;
+        });
+      }).catch(function () { return []; });
+    }
+    function closeAgentPop() { if (agentPop) { agentPop.remove(); agentPop = null; } }
+    function drawAgents() {
+      agentMarks.forEach(function (h) { h.remove(); }); agentMarks = []; closeAgentPop();
+      var tg = document.getElementById("agent-toggle");
+      if (tg) {
+        tg.style.display = agents && agents.length ? "" : "none";
+        tg.className = "agent-toggle" + (agentOn ? " on" : "");
+        tg.setAttribute("aria-pressed", String(agentOn));
+        tg.textContent = "🟠 근처 부동산 " + (agents ? agents.length : 0) + "곳 " + (agentOn ? "숨기기" : "보기");
+      }
+      if (!homeMap || !agents || !agentOn) return;
+      agents.forEach(function (a) {
+        agentMarks.push(homeMap.addHtml([a.lat, a.lng], '<span class="mk-agent">' + AGENT_HOUSE + "</span>", {
+          title: a.name, z: 3,
+          onClick: function () {
+            closeAgentPop();
+            var tel = String(a.phone || "").replace(/[^0-9+]/g, "");
+            agentPop = homeMap.addHtml([a.lat, a.lng],
+              '<div class="agent-card"><button type="button" class="ag-x" aria-label="닫기">✕</button><b>' + esc(a.name) + "</b>" + esc(a.addr) + "<br>" +
+              (tel ? '<a href="tel:' + esc(tel) + '">📞 ' + esc(a.phone) + "</a>" : "") + (a.url ? '<a href="' + esc(a.url) + '" target="_blank" rel="noopener">카카오맵</a>' : "") + "</div>", { z: 30 });
+            setTimeout(function () { var x = document.querySelector(".agent-card .ag-x"); if (x) x.addEventListener("click", closeAgentPop); }, 0);
+          }
+        }));
+      });
+    }
+    function loadAgentsOnce() {
+      if (agents || agentLoading) { drawAgents(); return; }
+      agentLoading = true;
+      fetchAgents().then(function (list) { agents = list || []; agentLoading = false; drawAgents(); });
+    }
+    (function () {
+      var tg = document.getElementById("agent-toggle");
+      if (tg) tg.addEventListener("click", function () { agentOn = !agentOn; drawAgents(); });
+    })();
     function drawMarkers() {
       if (!homeMap) return;
       homeMarks.forEach(function (h) { h.remove(); });
@@ -2395,7 +2493,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       var hint = document.getElementById("map-hint");
       var noPos = noPosAll;
       if (hint) {
-        hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 건물 이름 표시를 누르면 해당 건물이 아래에 떠요." +
+        hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 건물 이름 표시를 누르면 해당 건물이 아래에 떠요. 주황색 집은 근처 부동산이에요." +
           (noPos > 0
             ? (geoPending()
                 ? " (주소로 위치를 찾는 중인 건물 " + noPos + "곳)"
@@ -2544,7 +2642,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
       };
       listEl.innerHTML =
         (pinned.length ? sec("__pin", "최근 올라온 제보", pinned, "") : "") +
-        (rtPinned.length ? sec("__rt", "최근 실거래 (국토부·추정)", rtPinned, "") : "") +
+        (rtPinned.length ? sec("__rt", "최근 실거래", rtPinned, "") : "") +
         groups.map(function (gr) { return sec(gr.k, gr.k, gr.rows); }).join("");
       Array.prototype.forEach.call(listEl.querySelectorAll(".hl-head"), function (h) {
         h.addEventListener("click", function () {
