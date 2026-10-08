@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 관리자: 구글(이메일 인증된) 계정 seokwon0224@gmail.com, kms04010269@gmail.com 만
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['seokwon0224@gmail.com', 'kms04010269@gmail.com']
+        && request.auth.token.email_verified == true;
+    }
+
+    match /buildings/{buildingId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      // 일반 로그인 사용자는 제보 등록 때 바뀌는 "최근 제보 요약"과 지도 좌표만 갱신 가능.
+      // 이름·주소·유형 수정과 건물 삭제는 관리자만.
+      allow update: if isAdmin() || (request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['lat', 'lng', 'lastReportAt', 'lastDealType', 'lastDeposit', 'lastRent', 'lastJeonseAmount', 'lastSaleAmount']));
+      allow delete: if isAdmin();
+
+      match /reports/{reportId} {
+        allow read: if true;
+        // 제보 등록: 본인 uid로만, 인증 배지/숨김 값은 못 붙임
+        allow create: if isAdmin() || (request.auth != null
+          && request.resource.data.authorUid == request.auth.uid
+          && request.resource.data.get('verification', null) == null
+          && !('hidden' in request.resource.data));
+        // 수정: 관리자는 전부, 작성자는 본인 글만(작성자 변경·숨김 변경·스스로 인증 완료 처리는 불가)
+        allow update: if isAdmin() || (request.auth != null
+          && resource.data.get('authorUid', '') == request.auth.uid
+          && request.resource.data.authorUid == resource.data.authorUid
+          && request.resource.data.get('hidden', false) == resource.data.get('hidden', false)
+          && (request.resource.data.get('verification', null) == resource.data.get('verification', null)
+              || request.resource.data.verification.status == 'pending'));
+        // 삭제: 관리자만
+        allow delete: if isAdmin();
+      }
+    }
+
+    // collectionGroup("reports") 쿼리(관리자 인증 대기 목록)용
+    match /{path=**}/reports/{reportId} {
+      allow read: if true;
+    }
+
+    // 공지사항: 누구나 읽기, 관리자만 쓰기
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 관리자 문의 / 허위매물 신고: 누구나 접수, 열람·처리·삭제는 관리자만
+    match /admin_messages/{messageId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 거주 인증: 관리자가 계약서 인증을 승인하면 생김 (게시판 'OO 거주중' 배지). 누구나 읽기, 관리자만 쓰기
+    match /residences/{uid} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // 거주 인증을 받은 사용자인지 (미인증은 자유게시판만 글·댓글 가능)
+    function isResident() {
+      return request.auth != null && exists(/databases/$(database)/documents/residences/$(request.auth.uid));
+    }
+    function badgeOk(b) {
+      return b == null || (exists(/databases/$(database)/documents/residences/$(request.auth.uid))
+        && b == get(/databases/$(database)/documents/residences/$(request.auth.uid)).data.name);
+    }
+
+    // 계약서 사진(이미지 데이터): 본인만 올리기, 관리자만 열람·삭제 (검토 후 즉시 삭제)
+    match /contract_files/{fileId} {
+      // 올리기: 로그인한 본인만 / 다시 올리기(덮어쓰기): 처음 올린 본인만 — 남의 계약서 바꿔치기 방지
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
+        && request.resource.data.image is string && request.resource.data.image.size() < 900000;
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.image is string && request.resource.data.image.size() < 900000;
+      allow read, delete: if isAdmin();
+    }
+
+    // 종합게시판: 누구나 읽기, 로그인 사용자 글쓰기(익명 표시), 배지는 거주 인증과 일치해야 함
+    match /posts/{postId} {
+      // 읽기: 자유게시판은 누구나, 나머지 게시판은 거주 인증자·관리자만
+      allow read: if resource.data.category == '자유' || isResident() || isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 80
+        && request.resource.data.body is string && request.resource.data.body.size() <= 5000
+        && request.resource.data.likeCount == 0 && request.resource.data.commentCount == 0
+        && !('hidden' in request.resource.data)
+        && badgeOk(request.resource.data.get('badge', null))
+        && (request.resource.data.category == '자유' || isResident() || isAdmin());
+      allow update: if isAdmin()
+        || (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'commentCount']));
+      allow delete: if isAdmin() || (request.auth != null && resource.data.authorUid == request.auth.uid);
+
+      match /comments/{commentId} {
+        allow read: if get(/databases/$(database)/documents/posts/$(postId)).data.category == '자유' || isResident() || isAdmin();
+        allow create: if request.auth != null
+          && request.resource.data.authorUid == request.auth.uid
+          && request.resource.data.body is string && request.resource.data.body.size() > 0 && request.resource.data.body.size() <= 1000
+          && !('hidden' in request.resource.data)
+          && badgeOk(request.resource.data.get('badge', null))
+          && (get(/databases/$(database)/documents/posts/$(postId)).data.category == '자유' || isResident() || isAdmin());
+        allow update: if isAdmin();
+        allow delete: if isAdmin() || (request.auth != null && resource.data.authorUid == request.auth.uid);
+      }
+      match /likes/{uid} {
+        allow read: if true;
+        allow create, delete: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // 사용자 프로필: 본인만
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
