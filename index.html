@@ -1148,6 +1148,14 @@
   .kind-tabs button { flex: 1; border: 1px solid #e2e2e8; background: #fff; border-radius: 10px; padding: 9px 6px; font: inherit; font-size: 0.86rem; font-weight: 700; color: #777; cursor: pointer; }
   .kind-tabs button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
   .kind-tabs button.on.rp { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
+  .picked-card { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; padding: 12px 14px; border: 1.5px solid var(--accent); border-radius: 12px; background: var(--accent-soft); animation: pcIn .25s ease; }
+  .picked-card .pc-ic { font-size: 1.2rem; flex: none; }
+  .picked-card .pc-main { flex: 1; min-width: 0; }
+  .picked-card .pc-k { font-size: 0.72rem; font-weight: 700; color: var(--accent-strong); }
+  .picked-card b { display: block; font-size: 1.02rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .picked-card .pc-a { font-size: 0.8rem; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .picked-card button { flex: none; border: 1px solid var(--accent); background: #fff; color: var(--accent-strong); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+  @keyframes pcIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
@@ -4012,18 +4020,30 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           (sel ? '<span class="pk-label">' + esc(b.name || "건물") + "</span>" : ""), {
           z: sel ? 10 : 2,
           title: (b.name || "건물") + (b.lastReportAt ? "" : " · 제보 없음"),
-          onClick: function () { picked = b; renderPicked(); }
+          onClick: function () { picked = b; renderPicked(true); }
         }));
       });
     }
-    function renderPicked() {
+    // 건물을 고르면 검색창 위에 고정 카드로 보여주고, 검색창은 '변경'을 누르기 전까지 숨김
+    function renderPicked(scroll) {
       if (pkMap) drawPkMarkers();
-      if (!picked) { pickedBox.innerHTML = ""; return; }
+      var sp = document.querySelector(".search-pick");
+      if (!picked) { pickedBox.innerHTML = ""; if (sp) sp.style.display = ""; return; }
+      if (sp) sp.style.display = "none";
+      resultsBox.style.display = "none";
       pickedBox.innerHTML =
-        '<div class="picked-box"><span>' + esc(picked.name) + " · " + esc(picked.address || "") + '</span><button type="button" id="unpick">변경</button></div>';
+        '<div class="picked-card">' +
+          '<span class="pc-ic">✅</span>' +
+          '<div class="pc-main"><div class="pc-k">선택한 건물</div><b>' + esc(picked.name || "이름 없는 건물") + "</b>" +
+            '<div class="pc-a">' + esc(shortAddr(picked) || picked.address || "") + (picked.buildingType ? " · " + esc(picked.buildingType) : "") + "</div></div>" +
+          '<button type="button" id="unpick">변경</button>' +
+        "</div>";
       document.getElementById("unpick").addEventListener("click", function () {
         picked = null; renderPicked(); searchInput.value = ""; searchInput.focus();
       });
+      var ll = buildingLatLng(picked);
+      if (pkMap && ll) { try { pkMap.setView(ll, 17); } catch (e) {} }
+      if (scroll) pickedBox.scrollIntoView({ behavior: "smooth", block: "center" });
     }
     function paintResults() {
       var q = searchInput.value.trim().toLowerCase();
@@ -4044,7 +4064,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         el.addEventListener("click", function () {
           var id = el.getAttribute("data-id");
           var b = allBuildings.filter(function (x) { return x.id === id; })[0];
-          if (b) { picked = b; renderPicked(); searchInput.value = ""; resultsBox.style.display = "none"; }
+          if (b) { picked = b; searchInput.value = ""; renderPicked(true); }
         });
       });
     }
