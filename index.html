@@ -1127,6 +1127,27 @@
   @keyframes ibUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
   /* 앱으로 실행 중일 때: 아이폰 노치·홈바 여백 */
   html.is-app body { padding-bottom: env(safe-area-inset-bottom); }
+  /* 필터 접기: 평소엔 거래유형 한 줄만, 가격은 눌러서 펼치기 */
+  .pf { padding: 8px 12px; }
+  .pf-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pf-top .pf-chips { margin-top: 0; }
+  .pf-tog { margin-left: auto; border: 1px solid #ddd8ea; background: #fff; border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 0.8rem; color: #555; cursor: pointer; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .pf-tog b { font-weight: 800; }
+  .pf-tog i { font-style: normal; display: inline-block; transition: transform .2s; }
+  .pf-tog.on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
+  .pf.open .pf-tog i { transform: rotate(180deg); }
+  .pf-more { display: none; margin-top: 8px; }
+  .pf.open .pf-more { display: block; }
+  .pf-more .pf-sec + .pf-sec { margin-top: 6px; }
+  .fab-btn.fab-ai { background: linear-gradient(135deg, #7c5cc4, #4f9bd9); }
+  .fab-btn.fab-ai .ai-fish { width: 22px; height: 18px; background: #fff; border-radius: 50%; padding: 2px; box-sizing: content-box; margin-bottom: 2px; }
+  @media (max-width: 480px) { .fab-btn.fab-ai .ai-fish { width: 18px; height: 15px; } }
+  .ai-panel { left: auto !important; right: 16px; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+  @media (max-width: 480px) { .ai-panel { left: 8px !important; right: 8px; bottom: calc(132px + env(safe-area-inset-bottom, 0px)); height: min(520px, calc(100vh - 170px)); } }
+  .kind-tabs { display: flex; gap: 6px; margin: -2px 0 12px; }
+  .kind-tabs button { flex: 1; border: 1px solid #e2e2e8; background: #fff; border-radius: 10px; padding: 9px 6px; font: inherit; font-size: 0.86rem; font-weight: 700; color: #777; cursor: pointer; }
+  .kind-tabs button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+  .kind-tabs button.on.rp { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
 </style>
 </head>
 <body>
@@ -1199,7 +1220,6 @@
 </footer>
 <div id="toast"></div>
 
-<button type="button" class="ai-fab" id="ai-fab" aria-label="우럭 AI 열기"><svg class="ai-fish" viewBox="-1 2 35 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 9 L17 3 L19.5 10.5 Z" fill="#3d4f5c"/><path d="M27 17 L32.5 10.5 L32.5 23.5 Z" fill="#3d4f5c"/><ellipse cx="16" cy="17.5" rx="12.5" ry="8.2" fill="#5b7386"/><path d="M7 22.5 Q4 27 1.5 26 Q4.5 23 5.5 20 Z" fill="#e0a563"/><circle cx="9.3" cy="15.5" r="4.3" fill="#f5f8fa"/><circle cx="8.5" cy="15.5" r="2.7" fill="#182029"/><circle cx="7.5" cy="14.3" r="0.9" fill="#ffffff"/><path d="M4.2 19.5 Q6.5 21.5 9.5 20.3" stroke="#33424c" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>우럭 AI</button>
 <div class="ai-panel" id="ai-panel" role="dialog" aria-label="우럭 AI">
   <div class="ai-head"><div class="ai-title"><svg class="ai-fish" viewBox="-1 2 35 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 9 L17 3 L19.5 10.5 Z" fill="#3d4f5c"/><path d="M27 17 L32.5 10.5 L32.5 23.5 Z" fill="#3d4f5c"/><ellipse cx="16" cy="17.5" rx="12.5" ry="8.2" fill="#5b7386"/><path d="M7 22.5 Q4 27 1.5 26 Q4.5 23 5.5 20 Z" fill="#e0a563"/><circle cx="9.3" cy="15.5" r="4.3" fill="#f5f8fa"/><circle cx="8.5" cy="15.5" r="2.7" fill="#182029"/><circle cx="7.5" cy="14.3" r="0.9" fill="#ffffff"/><path d="M4.2 19.5 Q6.5 21.5 9.5 20.3" stroke="#33424c" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg><div><b>우럭 AI</b><small>월계1동 건물 정보를 바탕으로 답해요 · 참고용</small></div></div><button type="button" class="ai-x" id="ai-x" aria-label="닫기">✕</button></div>
   <div class="ai-msgs" id="ai-msgs"></div>
@@ -1207,12 +1227,13 @@
   <form class="ai-form" id="ai-form"><input type="text" id="ai-input" maxlength="200" placeholder="예: 월세 50 이하 원룸 알려줘" autocomplete="off"><button type="submit" id="ai-send">보내기</button></form>
 </div>
 <div class="fab-stack">
+  <button type="button" class="fab-btn fab-ai" id="ai-fab" aria-label="우럭 AI 열기"><svg class="ai-fish" viewBox="-1 2 35 28" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 9 L17 3 L19.5 10.5 Z" fill="#3d4f5c"/><path d="M27 17 L32.5 10.5 L32.5 23.5 Z" fill="#3d4f5c"/><ellipse cx="16" cy="17.5" rx="12.5" ry="8.2" fill="#5b7386"/><path d="M7 22.5 Q4 27 1.5 26 Q4.5 23 5.5 20 Z" fill="#e0a563"/><circle cx="9.3" cy="15.5" r="4.3" fill="#f5f8fa"/><circle cx="8.5" cy="15.5" r="2.7" fill="#182029"/><circle cx="7.5" cy="14.3" r="0.9" fill="#ffffff"/><path d="M4.2 19.5 Q6.5 21.5 9.5 20.3" stroke="#33424c" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>우럭<br>AI</button>
   <button type="button" class="fab-btn fab-admin" id="fab-inquiry"><span class="ic">💬</span>관리자<br>문의</button>
-  <button type="button" class="fab-btn fab-report" id="fab-report"><span class="ic">🚩</span>허위매물<br>신고</button>
 </div>
 
 <div class="modal-overlay" id="inquiry-modal">
   <div class="modal-box">
+    <div class="kind-tabs"><button type="button" class="on" data-kind="inq">💬 문의하기</button><button type="button" class="rp" data-kind="rep">🚩 허위매물 신고</button></div>
     <h3>관리자에게 문의하기</h3>
     <p class="hint" style="color:var(--ink-muted);font-size:0.84rem">궁금한 점이나 건의하고 싶은 내용을 남겨주세요. 답을 받고 싶으면 연락처를 함께 적어주세요.</p>
     <div class="field"><label class="main">연락처 (선택, 이메일 등)</label><input type="text" id="inquiry-contact" placeholder="답변받을 이메일 (선택)"></div>
@@ -1226,6 +1247,7 @@
 
 <div class="modal-overlay" id="report-modal">
   <div class="modal-box">
+    <div class="kind-tabs"><button type="button" data-kind="inq">💬 문의하기</button><button type="button" class="on rp" data-kind="rep">🚩 허위매물 신고</button></div>
     <h3>허위매물 신고하기</h3>
     <p class="hint" style="color:var(--ink-muted);font-size:0.84rem">사실과 다르거나 의심되는 제보/매물이 있다면 알려주세요. 관리자가 확인 후 조치할게요.</p>
     <div class="field"><label class="main">신고할 매물</label>
@@ -2452,6 +2474,13 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     ev.preventDefault(); ev.stopPropagation();
     adminRenameBuilding(t.getAttribute("data-edit-name"));
   }, true);
+  // 검색: 띄어쓰기·대소문자·기호를 무시하고 비교 (예: "광운로14길" = "광운로 14길", "exito" = "EXITO")
+  function normQ(t) { return String(t || "").toLowerCase().replace(/[\s·,.\-()\[\]_/]+/g, ""); }
+  function searchHit(b, q) {
+    var nq = normQ(q);
+    if (!nq) return true;
+    return [b.name, b.address, b.roadAddress, shortAddr(b), b.zonecode].some(function (f) { return f && normQ(f).indexOf(nq) > -1; });
+  }
   function addrKey(b) { return shortAddr(b) || String(b.name || ""); }
   function groupRows(rows) {
     var groups = {}, order = [];
@@ -2556,8 +2585,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
             '<select id="ftype">' + options(ROOM_TYPES, "전체 유형") + "</select>" +
           "</div>" +
           '<div class="pf" id="pf">' +
-            '<div class="pf-sec"><div class="pf-h">거래유형</div>' +
-              '<div class="pf-chips" id="pf-deal"><button type="button" class="pf-chip on" data-deal="월세">월세</button><button type="button" class="pf-chip" data-deal="전세">전세</button><button type="button" class="pf-chip" data-deal="매매">매매</button></div></div>' +
+            '<div class="pf-top"><div class="pf-h">거래유형</div>' +
+              '<div class="pf-chips" id="pf-deal"><button type="button" class="pf-chip on" data-deal="월세">월세</button><button type="button" class="pf-chip" data-deal="전세">전세</button><button type="button" class="pf-chip" data-deal="매매">매매</button></div><button type="button" class="pf-tog" id="pf-tog" aria-expanded="false">💰 <b id="pf-sum">가격 전체</b> <i>▾</i></button></div>' +
+            '<div class="pf-more" id="pf-more">' +
             '<div class="pf-sec"><div class="pf-hrow"><div class="pf-h" id="pf-dh">보증금</div><b class="pf-val" id="pf-dval">전체</b></div>' +
               '<div class="pf-slider" id="pf-dr"><span class="pf-bubble" id="pf-dv">전체</span><div class="pf-range"><input type="range" id="pf-dmin" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="0" aria-label="보증금 최소"><input type="range" id="pf-dmax" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="' + (PF_DEP.length - 1) + '" aria-label="보증금 최대"></div>' +
               '<div class="pf-ticks" id="pf-dticks"></div></div></div>' +
@@ -2565,6 +2595,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
               '<div class="pf-slider" id="pf-rr"><span class="pf-bubble" id="pf-rv">전체</span><div class="pf-range"><input type="range" id="pf-rmin" min="0" max="' + (PF_RENT.length - 1) + '" step="1" value="0" aria-label="월세 최소"><input type="range" id="pf-rmax" min="0" max="' + (PF_RENT.length - 1) + '" step="1" value="' + (PF_RENT.length - 1) + '" aria-label="월세 최대"></div>' +
               '<div class="pf-ticks"><span style="left:0">최소</span><span style="left:' + pfPos(PF_RENT, 50) + '%">50만</span><span style="left:' + pfPos(PF_RENT, 100) + '%">100만</span><span style="left:100%">최대</span></div></div></div>' +
             '<div class="pf-foot"><span id="pf-note">조건에 맞는 집만 목록과 지도에 보여요.</span><button type="button" class="pf-reset" id="pf-reset">↺ 초기화</button></div>' +
+            "</div>" +
           "</div>" +
           (hasContributed() ? "" :
             '<div class="banner hs-banner">🔒 난방비·채광·소음 같은 상세 정보는 제보 1건을 남기면 모든 건물에서 볼 수 있어요. ' +
@@ -2897,7 +2928,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var pf = readPf();
       var t = typeSel.value;
       var rows = homeCache.filter(function (b) {
-        var okQ = !q || (b.name || "").toLowerCase().indexOf(q) > -1 || (b.address || "").toLowerCase().indexOf(q) > -1 || (b.zonecode || "").indexOf(q) > -1;
+        var okQ = searchHit(b, q);
         var okT = !t || b.buildingType === t;
         return okQ && okT && pfMatch(b, pf);
       });
@@ -3046,6 +3077,14 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var dvb = document.getElementById("pf-dval"), rvb = document.getElementById("pf-rval");
       if (dvb) { dvb.textContent = big(depArr(), p.ia, p.ib); dvb.classList.toggle("on", p.depOn); }
       if (rvb) { rvb.textContent = big(PF_RENT, p.ic, p.id); rvb.classList.toggle("on", p.rentOn); }
+      var sum = document.getElementById("pf-sum");
+      if (sum) {
+        var parts = [];
+        if (p.depOn) parts.push((p.amt ? "" : "보증금 ") + big(depArr(), p.ia, p.ib));
+        if (p.rentOn) parts.push("월세 " + big(PF_RENT, p.ic, p.id));
+        sum.textContent = parts.length ? parts.join(" · ") : "가격 전체";
+        document.getElementById("pf-tog").classList.toggle("on", parts.length > 0);
+      }
       function setBar(id, lo, hi, n) {
         var el = document.getElementById(id), A = lo / (n - 1) * 100, B = hi / (n - 1) * 100;
         el.style.setProperty("--a", A + "%"); el.style.setProperty("--b", B + "%"); el.style.setProperty("--mf", String((A + B) / 200));
@@ -3077,6 +3116,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       syncPfUi(); paint();
     });
     applyPfMode(); syncPfUi();
+    document.getElementById("pf-tog").addEventListener("click", function () {
+      var box = document.getElementById("pf"), open = !box.classList.contains("open");
+      box.classList.toggle("open", open); this.setAttribute("aria-expanded", String(open));
+    });
     mountBoardTeaser();
     Array.prototype.forEach.call(document.querySelectorAll(".hs-nt"), function (t) {
       t.addEventListener("click", function () {
@@ -3986,7 +4029,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var q = searchInput.value.trim().toLowerCase();
       if (!q) { resultsBox.style.display = "none"; resultsBox.innerHTML = ""; return; }
       var rows = allBuildings.filter(function (b) {
-        return (b.name || "").toLowerCase().indexOf(q) > -1 || (b.address || "").toLowerCase().indexOf(q) > -1 || (b.zonecode || "").indexOf(q) > -1;
+        return searchHit(b, q);
       }).slice(0, 12);
       if (!rows.length) {
         resultsBox.style.display = "";
@@ -5363,6 +5406,19 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     openModal("inquiry-modal");
   });
   document.getElementById("inquiry-cancel").addEventListener("click", function () { closeModal("inquiry-modal"); });
+  // 관리자 문의 창 안에서 '문의하기 / 허위매물 신고' 선택
+  Array.prototype.forEach.call(document.querySelectorAll(".kind-tabs button"), function (b) {
+    b.addEventListener("click", function () {
+      if (b.classList.contains("on")) return;
+      if (b.getAttribute("data-kind") === "rep") { closeModal("inquiry-modal"); openReportModal(null); }
+      else {
+        closeModal("report-modal");
+        document.getElementById("inquiry-contact").value = (currentUser && currentUser.email) || "";
+        document.getElementById("inquiry-content").value = "";
+        openModal("inquiry-modal");
+      }
+    });
+  });
   document.getElementById("inquiry-modal").addEventListener("click", function (ev) {
     if (ev.target.id === "inquiry-modal") closeModal("inquiry-modal");
   });
@@ -5403,7 +5459,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var listEl = document.getElementById("rp-list");
     var q = document.getElementById("rp-search").value.trim().toLowerCase();
     var rows = rpBuildings.filter(function (b) {
-      return !q || (b.name || "").toLowerCase().indexOf(q) > -1 || (b.address || "").toLowerCase().indexOf(q) > -1;
+      return searchHit(b, q);
     });
     if (!rpBuildings.length) { listEl.innerHTML = '<div class="empty" style="margin:0;padding:18px">등록된 매물을 불러오는 중이거나 아직 없어요.</div>'; return; }
     if (!rows.length) { listEl.innerHTML = '<div class="empty" style="margin:0;padding:18px">검색 결과가 없어요. "직접 입력"으로 적어주세요.</div>'; return; }
@@ -5445,7 +5501,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     loadRpBuildings();
     openModal("report-modal");
   }
-  document.getElementById("fab-report").addEventListener("click", function () { openReportModal(null); });
+
   document.getElementById("rp-tab-list").addEventListener("click", function () { setRpTab("list"); });
   document.getElementById("rp-tab-free").addEventListener("click", function () { setRpTab("free"); });
   document.getElementById("rp-search").addEventListener("input", paintRpList);
