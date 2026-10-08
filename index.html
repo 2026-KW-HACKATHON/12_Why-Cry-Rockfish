@@ -291,6 +291,12 @@
   .bd-head h2 { margin: 0; font-size: 1.6rem; letter-spacing: -0.03em; }
   .bd-head p { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.88rem; }
   .bd-write { flex: none; }
+  .bd-tab.lk { color: #aaa; background: #f6f6f8; }
+  .bd-tab.lk.on { background: #888; border-color: #888; color: #fff; }
+  .bd-lockpage { background: #fff; border: 1px solid #ececf0; border-radius: 14px; padding: 34px 20px; text-align: center; font-size: 0.95rem; line-height: 1.6; }
+  .bd-lockpage p { color: #777; font-size: 0.86rem; margin: 8px 0 16px; }
+  .bd-lock-ic { font-size: 2rem; margin-bottom: 6px; }
+  .bd-lock-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .bd-write.locked { background: #f1f1f4 !important; color: #777 !important; box-shadow: none !important; border: 1px solid #e2e2e8 !important; }
   .bd-cat-lg { font-size: 0.95rem; padding: 3px 8px; vertical-align: 3px; }
   .bd-lock { font-size: 0.84rem; color: #777; text-align: center; }
@@ -4337,55 +4343,74 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     return FV && FV.increment ? FV.increment(n) : Math.max(0, (Number(cur) || 0) + n);
   }
 
+  // 게시판 열람 권한: 관리자·거주 인증자 = 모든 게시판 / 그 외(비로그인 포함) = 자유게시판만
+  function boardAccess() {
+    if (isAdmin()) return Promise.resolve(true);
+    if (!currentUser) return Promise.resolve(false);
+    return getResidence(currentUser.uid).then(function (r) { return !!r; });
+  }
+  // 권한에 맞는 게시글 쿼리 (미인증은 자유게시판만 — 규칙도 같은 조건이라 쿼리가 맞아야 읽힘)
+  function boardQuery(full, n) {
+    return full ? db.collection("posts").orderBy("createdAt", "desc").limit(n)
+                : db.collection("posts").where("category", "==", "자유").limit(n * 2);
+  }
+  function bdSort(rows) { return rows.sort(function (a, b) { return String(b.createdAt || "").localeCompare(String(a.createdAt || "")); }); }
+  function bdLockHtml(what) {
+    return '<div class="bd-lockpage"><div class="bd-lock-ic">🔒</div><b>' + esc(what) + "</b>은(는) 거주 인증한 이웃만 볼 수 있어요." +
+      "<p>계약서로 집을 인증하면 모든 게시판을 보고 쓸 수 있어요.<br>인증 전에는 자유게시판을 이용해주세요.</p>" +
+      '<div class="bd-lock-btns"><a class="btn" href="#/board">자유게시판 보기</a><a class="btn primary" href="#/submit">계약서로 인증하기</a></div></div>';
+  }
+
   function renderBoard(cat) {
     cat = cat && BOARD_CATS.indexOf(cat) > -1 ? cat : "";
-    app.innerHTML =
-      '<div class="bd-wrap">' +
-        '<div class="bd-head">' +
-          '<div><h2>종합게시판</h2><p>월계1동 이웃끼리 익명으로 나누는 이야기</p></div>' +
-          '<a class="btn primary bd-write" id="bd-write" href="#/board/write/' + encodeURIComponent(cat || "자유") + '">✏️ ' + esc(cat || "자유") + " 글쓰기</a>" +
-        "</div>" +
-        '<div class="bd-tabs">' + [""].concat(BOARD_CATS).map(function (c) {
-          return '<a href="#/board' + (c ? "/c/" + encodeURIComponent(c) : "") + '" class="bd-tab' + (c === cat ? " on" : "") + '">' + (c || "전체") + "</a>";
-        }).join("") + "</div>" +
-        '<div id="bd-me"></div>' +
-        '<div id="bd-hot"></div>' +
-        '<div id="bd-list" class="bd-list"><div class="empty">글을 불러오는 중…</div></div>' +
-      "</div>";
-    var meEl = document.getElementById("bd-me");
-    if (currentUser) {
-      getResidence(currentUser.uid).then(function (r) {
-        if (!document.body.contains(meEl)) return;
-        meEl.innerHTML = r
-          ? '<div class="bd-me ok">내 글에는 <b>익명 · ' + esc(r.name) + " 거주중</b>으로 표시돼요.</div>"
-          : '<div class="bd-me">🏠 거주 인증 전에는 <b>자유게시판</b>에만 글·댓글을 쓸 수 있어요. 집을 인증하면 모든 게시판을 쓸 수 있고 <b>"OO빌라 거주중"</b> 배지가 붙어요. <a href="#/submit">계약서로 인증하기 →</a></div>';
-        if (!r && !isAdmin() && cat && cat !== "자유") {
-          var wb = document.getElementById("bd-write");
-          if (wb) { wb.classList.add("locked"); wb.textContent = "🔒 거주 인증 후 글쓰기"; wb.setAttribute("href", "#/submit"); }
-        }
-      });
-    }
-    if (!db) { document.getElementById("bd-list").innerHTML = '<div class="empty">지금은 게시판을 불러올 수 없어요.</div>'; return; }
-    var unsub = db.collection("posts").orderBy("createdAt", "desc").limit(200).onSnapshot(function (snap) {
-      var admin = isAdmin();
-      var all = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); })
-        .filter(function (p) { return !p.hidden || admin; });
-      var rows = cat ? all.filter(function (p) { return p.category === cat; }) : all;
-      var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-      var hot = all.filter(function (p) { return (p.likeCount || 0) >= 3 && String(p.createdAt) >= weekAgo; })
-        .sort(function (a, b) { return (b.likeCount || 0) - (a.likeCount || 0); }).slice(0, 3);
-      var hotEl = document.getElementById("bd-hot"), listEl = document.getElementById("bd-list");
-      if (!listEl) return;
-      hotEl.innerHTML = !cat && hot.length ? '<div class="bd-hot"><div class="bd-hot-h">🔥 이번 주 인기글</div>' + hot.map(function (p) {
-        return '<a href="#/board/' + encodeURIComponent(p._id) + '"><span>' + esc(p.title) + '</span><em>👍 ' + (p.likeCount || 0) + "</em></a>";
-      }).join("") + "</div>" : "";
-      listEl.innerHTML = rows.length ? rows.map(bdItemHtml).join("") :
-        '<div class="empty">아직 글이 없어요.<div><a class="btn primary" href="#/board/write/' + encodeURIComponent(cat || "자유") + '">첫 글 쓰기</a></div></div>';
-    }, function () {
-      var listEl = document.getElementById("bd-list");
-      if (listEl) listEl.innerHTML = '<div class="empty">게시판을 불러오지 못했어요. (관리자: Firestore 규칙에 posts 규칙이 게시됐는지 확인해주세요)</div>';
+    app.innerHTML = '<div class="bd-wrap"><div class="empty" style="margin-top:30px">게시판 불러오는 중…</div></div>';
+    boardAccess().then(function (full) {
+      if (location.hash.indexOf("#/board") !== 0) return;
+      var r = null;
+      var resP = currentUser ? getResidence(currentUser.uid) : Promise.resolve(null);
+      resP.then(function (res) { r = res; paintBoard(full, r); });
     });
-    track(unsub);
+    function paintBoard(full, r) {
+      var locked = !full && cat && cat !== "자유";
+      app.innerHTML =
+        '<div class="bd-wrap">' +
+          '<div class="bd-head">' +
+            '<div><h2>종합게시판</h2><p>월계1동 이웃끼리 익명으로 나누는 이야기</p></div>' +
+            (locked ? "" : '<a class="btn primary bd-write" id="bd-write" href="#/board/write/' + encodeURIComponent(cat || "자유") + '">✏️ ' + esc(cat || "자유") + " 글쓰기</a>") +
+          "</div>" +
+          '<div class="bd-tabs">' + [""].concat(BOARD_CATS).map(function (c) {
+            var lk = !full && c && c !== "자유";
+            return '<a href="#/board' + (c ? "/c/" + encodeURIComponent(c) : "") + '" class="bd-tab' + (c === cat ? " on" : "") + (lk ? " lk" : "") + '">' + (lk ? "🔒 " : "") + (c || "전체") + "</a>";
+          }).join("") + "</div>" +
+          (full
+            ? (r ? '<div class="bd-me ok">내 글에는 <b>익명 · ' + esc(r.name) + " 거주중</b>으로 표시돼요.</div>" : "")
+            : '<div class="bd-me">🏠 거주 인증 전에는 <b>자유게시판</b>만 보고 쓸 수 있어요. ' + (currentUser ? "" : "로그인 후 ") + '계약서로 집을 인증하면 모든 게시판이 열리고 <b>"OO빌라 거주중"</b> 배지가 붙어요. <a href="#/submit">인증하기 →</a></div>') +
+          (locked ? bdLockHtml((cat || "") + " 게시판") :
+            '<div id="bd-hot"></div>' +
+            '<div id="bd-list" class="bd-list"><div class="empty">글을 불러오는 중…</div></div>') +
+        "</div>";
+      if (locked || !db) return;
+      var unsub = boardQuery(full, 200).onSnapshot(function (snap) {
+        var admin = isAdmin();
+        var all = bdSort(snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); }))
+          .filter(function (p) { return (!p.hidden || admin) && (full || p.category === "자유"); });
+        var rows = cat ? all.filter(function (p) { return p.category === cat; }) : all;
+        var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        var hot = all.filter(function (p) { return (p.likeCount || 0) >= 3 && String(p.createdAt) >= weekAgo; })
+          .sort(function (a, b) { return (b.likeCount || 0) - (a.likeCount || 0); }).slice(0, 3);
+        var hotEl = document.getElementById("bd-hot"), listEl = document.getElementById("bd-list");
+        if (!listEl) return;
+        hotEl.innerHTML = !cat && hot.length ? '<div class="bd-hot"><div class="bd-hot-h">🔥 이번 주 인기글</div>' + hot.map(function (p) {
+          return '<a href="#/board/' + encodeURIComponent(p._id) + '"><span>' + esc(p.title) + '</span><em>👍 ' + (p.likeCount || 0) + "</em></a>";
+        }).join("") + "</div>" : "";
+        listEl.innerHTML = rows.length ? rows.map(bdItemHtml).join("") :
+          '<div class="empty">아직 글이 없어요.<div><a class="btn primary" href="#/board/write/' + encodeURIComponent(cat || "자유") + '">첫 글 쓰기</a></div></div>';
+      }, function () {
+        var listEl = document.getElementById("bd-list");
+        if (listEl) listEl.innerHTML = '<div class="empty">게시판을 불러오지 못했어요. (관리자: Firestore 규칙이 게시됐는지 확인해주세요)</div>';
+      });
+      track(unsub);
+    }
   }
   function bdItemHtml(p) {
     var prev = String(p.body || "").replace(/\s+/g, " ").slice(0, 120);
@@ -4462,7 +4487,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     app.innerHTML = '<a class="back-link" href="#/board">← 게시판으로</a><div class="bd-wrap" id="bd-post"><div class="empty">불러오는 중…</div></div>';
     if (!db) return;
     var post = null, comments = [], liked = false, res = null;
-    if (currentUser) getResidence(currentUser.uid).then(function (r) { res = r; if (post) paint(); });
+    var resReady = !currentUser || isAdmin();
+    if (currentUser) getResidence(currentUser.uid).then(function (r) { res = r; resReady = true; if (post) paint(); });
     function anonOf(uid) {
       if (post && uid === post.authorUid) return "글쓴이";
       var seen = [];
@@ -4474,6 +4500,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       if (!post) { box.innerHTML = '<div class="empty">글을 찾을 수 없어요.</div>'; return; }
       var admin = isAdmin(), mine = currentUser && currentUser.uid === post.authorUid;
       if (post.hidden && !admin) { box.innerHTML = '<div class="empty">신고 등으로 숨김 처리된 글이에요.</div>'; return; }
+      if (!resReady && post.category !== "자유" && !admin) { box.innerHTML = '<div class="empty">불러오는 중…</div>'; return; }
+      if (post.category !== "자유" && !admin && !res) { box.innerHTML = bdLockHtml((post.category || "") + " 게시판의 글"); return; }
       var draft = (document.getElementById("bd-cmt") || {}).value || "";
       box.innerHTML =
         '<article class="bd-article">' +
@@ -4563,7 +4591,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     }
     track(db.doc("posts/" + id).onSnapshot(function (s) {
       post = s.exists ? Object.assign({ _id: s.id }, s.data()) : null; paint();
-    }, function () { post = null; paint(); }));
+    }, function () {
+      var box = document.getElementById("bd-post");
+      if (box) box.innerHTML = bdLockHtml("이 게시판의 글");
+    }));
     track(db.collection("posts/" + id + "/comments").orderBy("createdAt", "asc").limit(500).onSnapshot(function (snap) {
       comments = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); }); paint();
     }, function () {}));
@@ -4574,8 +4605,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   function mountBoardTeaser() {
     var el = document.getElementById("bd-teaser");
     if (!el || !db) return;
-    var unsub = db.collection("posts").orderBy("createdAt", "desc").limit(8).onSnapshot(function (snap) {
-      var rows = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); }).filter(function (p) { return !p.hidden; }).slice(0, 3);
+    boardAccess().then(function (full) {
+    if (!document.body.contains(el)) return;
+    var unsub = boardQuery(full, 8).onSnapshot(function (snap) {
+      var rows = bdSort(snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); })).filter(function (p) { return !p.hidden && (full || p.category === "자유"); }).slice(0, 3);
       el.innerHTML =
         (rows.length ? rows.map(function (p) {
           return '<a class="bdt-row" href="#/board/' + encodeURIComponent(p._id) + '"><span class="bd-cat">' + esc(p.category || "자유") + '</span><span class="bdt-t">' + esc(p.title) + '</span><em>💬 ' + (p.commentCount || 0) + "</em></a>";
@@ -4585,6 +4618,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       el.innerHTML = '<a class="bdt-row empty-row" href="#/board">게시판 바로가기 ›</a>';
     });
     track(unsub);
+    });
   }
 
   // ---------------- 내 정보 수정 ----------------
