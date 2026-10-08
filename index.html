@@ -285,6 +285,16 @@
   .bld-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
   .bld-chip i { font-style: normal; font-weight: 500; color: var(--ink-muted); }
   .bld-src { margin-top: 6px; font-size: 0.7rem; color: var(--ink-muted); }
+  .lbl-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .lbl-row .main { margin: 0; }
+  .fee-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 600; color: var(--ink-muted); cursor: pointer; white-space: nowrap; user-select: none; }
+  .fee-chk input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+  .fee-chk:has(input:checked) { color: var(--accent-strong); }
+  /* 제보·수정 화면: 점선 → 실선, 박스 밖 배경은 흰색 계열 명암 */
+  body.form-page { background: linear-gradient(180deg, #ffffff 0%, #f7f7f9 100%) fixed; background-color: #f7f7f9; }
+  body.form-page fieldset { background: #fff; border: 1px solid #e4e4ea; box-shadow: 0 1px 3px rgba(20,20,40,.05), 0 6px 18px rgba(20,20,40,.04); }
+  body.form-page input[type="text"], body.form-page input[type="email"], body.form-page input[type="password"], body.form-page input[type="number"], body.form-page select, body.form-page textarea { border-style: solid !important; border-color: #dcdce3 !important; background-color: #fff; }
+  body.form-page input:focus, body.form-page select:focus, body.form-page textarea:focus { border-color: var(--accent) !important; }
   .fee-inc { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; font-size: 0.9rem; }
   .fee-inc input { width: 18px; height: 18px; accent-color: var(--accent); }
   .fee-inc span { flex-basis: 100%; padding-left: 26px; font-size: 0.76rem; color: var(--ink-muted); }
@@ -2146,6 +2156,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     cleanup();
     var hash = location.hash.replace(/^#\/?/, "");
     var parts = hash.split("/").filter(Boolean);
+    document.body.classList.toggle("form-page", parts[0] === "submit" || parts[0] === "edit");
     window.scrollTo(0, 0);
     if (parts[0] === "building" && parts[1]) renderDetail(decodeURIComponent(parts[1]));
     else if (parts[0] === "edit" && parts[1] && parts[2]) renderEditReport(decodeURIComponent(parts[1]), decodeURIComponent(parts[2]));
@@ -3515,11 +3526,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<p style="margin:10px 0 0;font-size:0.8rem;color:var(--ink-muted)">같은 건물이어도 호수·층·위치에 따라 온도·채광 차이가 커요. 아는 만큼만 적어주세요.</p>' +
           '<div id="price-monthly" class="two-col">' +
             '<div class="field"><label class="main">보증금 (만원) *</label><input type="number" id="deposit" min="0" placeholder="예: 1000"></div>' +
-            '<div class="field"><label class="main">월세 (만원) *</label><input type="number" id="rent" min="0" placeholder="예: 45"></div>' +
+            '<div class="field"><div class="lbl-row"><label class="main" for="rent">월세 (만원) *</label><label class="fee-chk"><input type="checkbox" id="feeIncluded"> 관리비 포함</label></div><input type="number" id="rent" min="0" placeholder="예: 45"></div>' +
           "</div>" +
           '<div id="price-jeonse" class="field" style="display:none"><label class="main">전세금 (만원) *</label><input type="number" id="jeonseAmount" min="0" placeholder="예: 8000"></div>' +
           '<div id="price-sale" class="field" style="display:none"><label class="main">매매가 (만원) *</label><input type="number" id="saleAmount" min="0" placeholder="예: 25000"></div>' +
-          '<label class="fee-inc" id="fee-inc-row"><input type="checkbox" id="feeIncluded"> <b>관리비 포함 월세</b><span>월세에 관리비가 이미 들어 있어요 (따로 안 내요)</span></label>' +
           '<div class="fee-box" id="fee-box">' +
           '<div class="field"><label class="main">관리비 (만원, 대략)</label><input type="number" id="fee" min="0" placeholder="예: 7"></div>' +
           '<div class="field"><label class="main">관리비 포함 항목</label>' +
@@ -3673,7 +3683,6 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       priceMonthly.style.display = d === "월세" ? "" : "none";
       priceJeonse.style.display = d === "전세" ? "" : "none";
       priceSale.style.display = d === "매매" ? "" : "none";
-      document.getElementById("fee-inc-row").style.display = d === "월세" ? "" : "none";
       syncFeeInc();
     }
     dealTypeSel.addEventListener("change", updatePriceFields);
