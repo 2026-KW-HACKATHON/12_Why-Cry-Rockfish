@@ -1156,6 +1156,23 @@
   .picked-card .pc-a { font-size: 0.8rem; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .picked-card button { flex: none; border: 1px solid var(--accent); background: #fff; color: var(--accent-strong); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
   @keyframes pcIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  /* ---- 두 칸 입력: 왼쪽·오른쪽 항목 높이를 일자로 맞춤 ---- */
+  .two-col { align-items: end; }
+  .two-col > .field { margin-top: 0; }
+  .two-col + .two-col, .field + .two-col, .two-col + .field, p + .two-col { margin-top: 14px; }
+  .two-col > .field > label.main { min-height: 1.4em; }
+  /* ---- 모바일 최적화: 가로 넘침(옆 빈 공간) 방지 ---- */
+  fieldset { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  input, select, textarea, img, video { max-width: 100%; box-sizing: border-box; }
+  input[type="file"] { width: 100%; font-size: 0.85rem; }
+  html, body { overflow-x: clip; }
+  @media (max-width: 600px) {
+    .wrap { padding-left: 14px; padding-right: 14px; }
+    fieldset { padding: 14px 14px 18px; }
+    .two-col { gap: 10px; }
+    .bd-tabs { margin-left: -2px; margin-right: -2px; }
+  }
+  #fee-box { margin-top: 14px; }
 </style>
 </head>
 <body>
