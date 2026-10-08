@@ -2009,7 +2009,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     return '<div class="sky-thumb" data-lat="' + ll[0] + '" data-lng="' + ll[1] + '"></div>';
   }
   var thumbObserver = null, thumbQ = [], thumbBusy = false;
-  var rvPanoCache = {}, liveRv = [], RV_MAX = (window.matchMedia && matchMedia("(max-width: 760px)").matches) ? 5 : 10;
+  var rvPanoCache = {}, liveRv = [], RV_MAX = (window.matchMedia && matchMedia("(max-width: 760px)").matches) ? 8 : 15;
   function unloadRv(el) {
     if (!el) return;
     var i = liveRv.indexOf(el); if (i > -1) liveRv.splice(i, 1);
@@ -2586,7 +2586,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           "</div>" +
           '<div class="pf" id="pf">' +
             '<div class="pf-top"><div class="pf-h">거래유형</div>' +
-              '<div class="pf-chips" id="pf-deal"><button type="button" class="pf-chip on" data-deal="월세">월세</button><button type="button" class="pf-chip" data-deal="전세">전세</button><button type="button" class="pf-chip" data-deal="매매">매매</button></div><button type="button" class="pf-tog" id="pf-tog" aria-expanded="false">💰 <b id="pf-sum">가격 전체</b> <i>▾</i></button></div>' +
+              '<div class="pf-chips" id="pf-deal"><button type="button" class="pf-chip on" data-deal="월세">월세</button><button type="button" class="pf-chip" data-deal="전세">전세</button><button type="button" class="pf-chip" data-deal="매매">매매</button></div><button type="button" class="pf-tog" id="pf-tog" aria-expanded="false">💰 <b id="pf-sum">가격 필터</b> <i>▾</i></button></div>' +
             '<div class="pf-more" id="pf-more">' +
             '<div class="pf-sec"><div class="pf-hrow"><div class="pf-h" id="pf-dh">보증금</div><b class="pf-val" id="pf-dval">전체</b></div>' +
               '<div class="pf-slider" id="pf-dr"><span class="pf-bubble" id="pf-dv">전체</span><div class="pf-range"><input type="range" id="pf-dmin" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="0" aria-label="보증금 최소"><input type="range" id="pf-dmax" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="' + (PF_DEP.length - 1) + '" aria-label="보증금 최대"></div>' +
@@ -3082,7 +3082,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         var parts = [];
         if (p.depOn) parts.push((p.amt ? "" : "보증금 ") + big(depArr(), p.ia, p.ib));
         if (p.rentOn) parts.push("월세 " + big(PF_RENT, p.ic, p.id));
-        sum.textContent = parts.length ? parts.join(" · ") : "가격 전체";
+        sum.textContent = parts.length ? parts.join(" · ") : "가격 필터";
         document.getElementById("pf-tog").classList.toggle("on", parts.length > 0);
       }
       function setBar(id, lo, hi, n) {
