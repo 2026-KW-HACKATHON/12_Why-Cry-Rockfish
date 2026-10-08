@@ -113,7 +113,7 @@
   .intro b { color: var(--ink); font-weight: 600; }
 
   /* ---- search ---- */
-  input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { border-style: dashed !important; border-color: var(--dash) !important; background-color: rgba(255,255,255,.8); transition: border-color .2s, box-shadow .2s; }
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea { border-style: solid !important; border-color: var(--dash) !important; background-color: rgba(255,255,255,.8); transition: border-color .2s, box-shadow .2s; }
   input:focus, select:focus, textarea:focus { border-style: solid !important; border-color: var(--accent) !important; box-shadow: 0 0 0 4px rgba(124,92,196,.12) !important; outline: none; }
   .search-row {
     margin-top: 16px;
@@ -206,7 +206,7 @@
 
   .empty {
     margin-top: 28px;
-    border: 1px dashed var(--line);
+    border: 1px solid var(--line);
     border-radius: 12px;
     padding: 36px 20px;
     text-align: center;
@@ -262,7 +262,7 @@
   .r-card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .r-card .when { font-size: 0.76rem; color: var(--ink-muted); }
   .btn.danger { color: var(--warn); border-color: var(--warn-soft); }
-  .adm-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; padding: 8px 10px; border: 1px dashed var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
+  .adm-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 12px; padding: 8px 10px; border: 1px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
   .adm-bar .btn { padding: 4px 10px; font-size: 0.78rem; }
   .adm-bar.adm-building { margin-top: 14px; }
   .adm-label { font-size: 0.72rem; font-weight: 800; color: var(--accent-strong); margin-right: 4px; }
@@ -291,6 +291,10 @@
   .bd-head h2 { margin: 0; font-size: 1.6rem; letter-spacing: -0.03em; }
   .bd-head p { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.88rem; }
   .bd-write { flex: none; }
+  .bd-write.locked { background: #f1f1f4 !important; color: #777 !important; box-shadow: none !important; border: 1px solid #e2e2e8 !important; }
+  .bd-cat-lg { font-size: 0.95rem; padding: 3px 8px; vertical-align: 3px; }
+  .bd-lock { font-size: 0.84rem; color: #777; text-align: center; }
+  .bd-lock a { color: var(--accent-strong); font-weight: 700; }
   .bd-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 16px 0 10px; padding-bottom: 4px; scrollbar-width: none; }
   .bd-tab { flex: none; padding: 7px 14px; border-radius: 999px; border: 1px solid #e2e2e8; background: #fff; color: #555; font-size: 0.86rem; font-weight: 700; text-decoration: none; }
   .bd-tab.on { background: #222; border-color: #222; color: #fff; }
@@ -340,7 +344,26 @@
   .bd-cmt-form { display: flex; gap: 8px; padding: 12px; align-items: flex-end; }
   .bd-cmt-form textarea { flex: 1; min-width: 0; resize: vertical; }
   .bd-cmt-form.login { justify-content: center; }
-  .bd-teaser { background: #fff; border: 1px solid #ececf0; border-radius: 14px; padding: 12px 14px 6px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(20,20,40,.04); }
+  .bd-teaser { margin-top: 8px; }
+  .hs-notice .bdt-row { border-top: 0; padding: 6px 2px; background: none; }
+  .hs-notice .bd-cat { background: rgba(255,255,255,.7); }
+  .hs-ngo { font-size: 0.76rem; font-weight: 700; color: var(--ink-muted); text-decoration: none; margin-left: 6px; }
+  .bdt-more { display: none; font-size: 0.78rem; font-weight: 700; color: var(--accent-strong); text-decoration: none; padding: 4px 2px; }
+  .hs-ntabs { display: none; gap: 14px; }
+  .hs-nt { border: 0; background: none; padding: 0 0 4px; font: inherit; font-weight: 800; font-size: 0.98rem; color: #9b97a8; cursor: pointer; border-bottom: 2px solid transparent; }
+  .hs-nt.on { color: var(--ink, #2c2839); border-bottom-color: var(--accent); }
+  .hs-ncols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+  .hs-ncol { min-width: 0; }
+  @media (min-width: 761px) { .hs-hero .hs-notice { width: min(760px, 94%); } }
+  @media (max-width: 760px) {
+    .hs-ntabs { display: flex; }
+    .hs-hero .hs-notice { width: 88%; }
+    .hs-nt { white-space: nowrap; }
+    .bdt-more { display: inline-block; }
+    .hs-ncols { display: block; margin-top: 4px; }
+    .hs-ncol .hs-notice-h { display: none; }
+    .hs-ncols[data-show="n"] .hs-ncol[data-col="b"], .hs-ncols[data-show="b"] .hs-ncol[data-col="n"] { display: none; }
+  }
   .bdt-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
   .bdt-h a { text-decoration: none; color: var(--ink); }
   .bdt-h b { font-size: 0.98rem; }
@@ -376,7 +399,7 @@
   .info-tbl dd .sub { color: var(--ink-muted); font-weight: 400; font-size: 0.88em; }
   .info-tbl dd .est-tag { font-size: 0.72rem; font-weight: 700; color: var(--accent-strong); background: var(--accent-soft); border-radius: 999px; padding: 1px 7px; margin-right: 4px; vertical-align: 1px; }
   .info-src { margin-top: 10px; font-size: 0.7rem; color: var(--ink-muted); }
-  .rt-card { margin-top: 16px; padding: 16px; border: 1.5px dashed var(--dash); border-radius: 14px; background: linear-gradient(180deg, #fdfcff 0%, var(--surface-2) 100%); }
+  .rt-card { margin-top: 16px; padding: 16px; border: 1px solid var(--dash); border-radius: 14px; background: linear-gradient(180deg, #fdfcff 0%, var(--surface-2) 100%); }
   .rt-card .rt-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .rt-card h3 { margin: 0; font-size: 1rem; letter-spacing: -0.02em; }
   .rt-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; color: var(--accent-strong); background: var(--accent-soft); border: 1px solid var(--dash); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
@@ -388,7 +411,7 @@
   .rt-tile .v { font-size: 1rem; font-weight: 700; margin-top: 2px; letter-spacing: -0.02em; }
   .rt-tile .s { font-size: 0.7rem; color: var(--ink-muted); margin-top: 2px; }
   .rt-recent { margin-top: 12px; border-top: 1px solid var(--line); }
-  .rt-recent .rr { display: grid; grid-template-columns: 84px 40px 1fr auto; gap: 8px; align-items: center; padding: 7px 2px; border-bottom: 1px dashed var(--line); font-size: 0.8rem; }
+  .rt-recent .rr { display: grid; grid-template-columns: 84px 40px 1fr auto; gap: 8px; align-items: center; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 0.8rem; }
   .rt-recent .rr .d { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
   .rt-recent .rr .t { font-size: 0.7rem; font-weight: 700; text-align: center; border-radius: 6px; padding: 2px 0; background: var(--accent-soft); color: var(--accent-strong); }
   .rt-recent .rr .t.j { background: #e3f0fb; color: #2f6c9e; }
@@ -398,7 +421,7 @@
   .rt-foot { margin-top: 10px; font-size: 0.74rem; color: var(--ink-muted); }
   .hl-meta .est { color: var(--accent-strong); }
   .hl-meta .est-tag { display: inline-block; margin-left: 3px; font-size: 0.62rem; font-weight: 700; color: var(--accent); border: 1px solid var(--dash); border-radius: 4px; padding: 0 3px; vertical-align: 1px; }
-  .mk-pin.est { border-style: dashed !important; background: #fff !important; color: var(--accent-strong); }
+  .mk-pin.est { border-style: solid !important; background: #fff !important; color: var(--accent-strong); }
   .mk-pin.est.sel { background: #7c5cc4 !important; color: #fff; }
   .hex-card { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
   .hex-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
@@ -445,7 +468,7 @@
   .chip { font-size: 0.74rem; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--line); }
   .chip.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
   .chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
-  .r-note { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 0.87rem; color: var(--ink); }
+  .r-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.87rem; color: var(--ink); }
 
   /* ---- give-to-get detail lock ---- */
   .lock-banner {
@@ -774,12 +797,13 @@
   .hs-panel { padding: 30px 26px 60px 18px; min-width: 0; }
   .hs-photo { transition: opacity .55s ease, transform .9s ease; }
   .hs-hero { scroll-margin-top: 120px; }
-  .hs-mapbox { position: absolute; inset: 14px 10px 18px 18px; opacity: 0; pointer-events: none; transition: opacity .55s ease, transform .55s ease; transform: scale(.985); border-radius: 22px; overflow: hidden; border: 1.5px dashed var(--dash); box-shadow: 0 24px 50px -28px rgba(76,56,140,.45); background: var(--surface-2); }
+  .hs-mapbox { position: absolute; inset: 14px 10px 18px 18px; opacity: 0; pointer-events: none; transition: opacity .55s ease, transform .55s ease; transform: scale(.985); border-radius: 22px; overflow: hidden; border: 1px solid var(--dash); box-shadow: 0 24px 50px -28px rgba(76,56,140,.45); background: var(--surface-2); }
   .hs-hero.map-on .hs-mapbox { transform: none; }
   .hs-mapbox #home-map { position: absolute; inset: 0; height: 100%; }
   .hs-hero.map-on .hs-photo { opacity: 0; transform: scale(1.04); }
   .hs-hero.map-on .hs-mapbox { opacity: 1; pointer-events: auto; }
-  .hs-map-btn { position: absolute; left: clamp(24px, 6vw, 88px); bottom: clamp(32px, 8vh, 84px); display: inline-flex; align-items: center; gap: 10px; border: 1.5px dashed var(--dash); background: rgba(255,255,255,.72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--ink); animation: floaty 5s ease-in-out infinite; font-weight: 800; font-size: 1.05rem; padding: 14px 24px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.18); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, opacity .35s ease; }
+  .hs-map-btn { position: absolute; left: clamp(24px, 6vw, 88px); bottom: clamp(32px, 8vh, 84px); display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--dash); background: rgba(255,255,255,.72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--ink); animation: floaty 5s ease-in-out infinite; font-weight: 800; font-size: 1.05rem; padding: 14px 24px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.18); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, opacity .35s ease; }
+  @media (min-width: 761px) { .hs-map-btn { bottom: 104px; } }
   .hs-map-btn svg { width: 22px; height: 22px; color: var(--accent); }
   @keyframes floaty { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
   .hs-map-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0,0,0,.24); }
@@ -803,7 +827,7 @@
   .foot-mark .fill { fill: url(#fmGrad); opacity: .55; }
   .foot-mark .line { fill: none; stroke: #b79cf0; stroke-width: 1.4; stroke-dasharray: 2 5; stroke-linecap: round; animation: dashmove 18s linear infinite; }
   @keyframes dashmove { to { stroke-dashoffset: -280; } }
-  .pf { margin-top: 10px; padding: 16px 18px 12px; border: 1.5px dashed var(--dash, #cfc4ee); border-radius: 16px; background: rgba(255,255,255,.7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .pf { margin-top: 10px; padding: 16px 18px 12px; border: 1px solid var(--dash, #cfc4ee); border-radius: 16px; background: rgba(255,255,255,.7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   .pf.on { border-style: solid; border-color: rgba(124,92,196,.55); }
   .pf-sec + .pf-sec { margin-top: 16px; }
   .pf-h { font-weight: 800; font-size: 0.95rem; color: var(--ink, #2c2839); }
@@ -835,7 +859,7 @@
   .hs-notice .notice-list { margin-top: 8px; }
   .hs-notice .empty { margin: 0 !important; padding: 6px 0 2px !important; border: 0; background: none; font-size: 0.82rem; text-align: left; }
   .hs-hero.map-on .hs-notice, .hs-hero.detail-on .hs-notice { opacity: 0; pointer-events: none; }
-  .foot-line { border: 0; border-top: 1.5px dashed var(--dash); margin: 6px auto 14px; max-width: 1240px; }
+  .foot-line { border: 0; border-top: 1px solid var(--dash); margin: 6px auto 14px; max-width: 1240px; }
   .foot-copy { font-size: 0.82rem; color: var(--ink-muted); }
   @media (prefers-reduced-motion: reduce) {
     body::before, .hs-photo img, .hs-map-btn, .btn.primary::after, .foot-mark .line { animation: none !important; }
@@ -845,15 +869,15 @@
   #list.hl-list { background: transparent; border: 0; box-shadow: none; padding: 0; }
   #list .hl-group { border-radius: 14px; padding: 6px 8px 8px; margin: 0; }
   #list .hl-group + .hl-group { margin-top: 14px; }
-  #list .hl-group.tinted { background: linear-gradient(160deg, color-mix(in srgb, var(--cat) 22%, transparent), color-mix(in srgb, var(--cat) 40%, transparent)); color: var(--ink); border: 1.5px dashed color-mix(in srgb, var(--cat) 60%, rgba(124,92,196,.5)); box-shadow: 0 14px 30px -26px rgba(76,56,140,.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  #list .hl-group.plain { background: rgba(255,255,255,.75); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1.5px dashed var(--dash); }
+  #list .hl-group.tinted { background: linear-gradient(160deg, color-mix(in srgb, var(--cat) 22%, transparent), color-mix(in srgb, var(--cat) 40%, transparent)); color: var(--ink); border: 1px solid color-mix(in srgb, var(--cat) 60%, rgba(124,92,196,.5)); box-shadow: 0 14px 30px -26px rgba(76,56,140,.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  #list .hl-group.plain { background: rgba(255,255,255,.75); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--dash); }
   #list .hl-head { flex-wrap: wrap; align-items: baseline; padding: 14px 14px 12px; color: inherit; gap: 4px 10px; }
   #list .hl-no { flex-basis: 100%; font-family: var(--mono); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.04em; opacity: .75; }
   #list .hl-title { font-size: 1.55rem; font-weight: 500; letter-spacing: -0.02em; }
   #list .hl-count { background: transparent; color: inherit; opacity: .65; font-size: 0.82rem; font-weight: 600; padding: 0; }
   #list .hl-chev { align-self: center; color: inherit; }
   #list .hl-inner { border-top: 1px solid currentColor; margin: 0 6px; }
-  #list .hl-inner { border-top-style: dashed; }
+  #list .hl-inner { border-top-style: solid; }
   #list .tinted .hl-inner { border-top-color: rgba(95,67,166,.45); }
   #list .plain .hl-inner { border-top-color: var(--line); }
   #list .tinted .hl-row { color: var(--ink); border-radius: 10px; }
@@ -868,7 +892,7 @@
   #list .tinted .hl-dot.on { background: var(--deep); }
   #list .tinted .hl-meta small.wait { color: rgba(44,40,57,.5); }
   .hl-row { margin-top: 2px; content-visibility: auto; contain-intrinsic-size: auto 72px; }
-  .hl-more { display: block; width: calc(100% - 16px); margin: 8px 8px 4px; padding: 9px 12px; border: 1px dashed var(--dash); border-radius: 10px; background: rgba(255,255,255,.6); color: var(--accent-strong); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; }
+  .hl-more { display: block; width: calc(100% - 16px); margin: 8px 8px 4px; padding: 9px 12px; border: 1px solid var(--dash); border-radius: 10px; background: rgba(255,255,255,.6); color: var(--accent-strong); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; }
   .hl-more:hover { background: #fff; }
   .hl-dot { width: 7px; height: 7px; }
   .lp-row { display: flex; align-items: center; gap: 8px; }
@@ -1046,6 +1070,26 @@
     .auth-sheet { width: 100%; min-height: 100%; border: 0; border-radius: 0; padding: 86px 18px 30px; box-shadow: none; }
     .auth-x { top: 20px; right: 10px; }
   }
+
+  /* 거래유형·가격 필터 컴팩트 */
+  .pf { padding: 10px 14px 8px; border-radius: 14px; }
+  .pf-sec + .pf-sec { margin-top: 8px; }
+  .pf-h { font-size: 0.86rem; }
+  .pf-h small { font-size: 0.74rem; }
+  .pf-chips { gap: 6px; margin-top: 6px; }
+  .pf-chip { padding: 5px 13px; font-size: 0.8rem; }
+  .pf-slider { padding-top: 26px; }
+  .pf-bubble { font-size: 0.74rem; padding: 2px 8px; }
+  .pf-range { height: 22px; }
+  .pf-range::before { top: 9px; height: 4px; }
+  .pf-range input[type=range] { height: 22px; }
+  .pf-range input[type=range]::-webkit-slider-runnable-track { height: 22px; }
+  .pf-range input[type=range]::-webkit-slider-thumb { width: 20px; height: 20px; }
+  .pf-range input[type=range]::-moz-range-thumb { width: 18px; height: 18px; }
+  .pf-ticks { height: 20px; margin-top: 0; font-size: 0.7rem; }
+  .pf-ticks span { top: 6px; }
+  .pf-foot { margin-top: 4px; font-size: 0.7rem; }
+  .pf-reset { padding: 3px 10px; }
 </style>
 </head>
 <body>
@@ -1721,7 +1765,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     // 월계1동 바깥은 흐리게 가리고, 경계선을 그린 뒤 지도를 그 범위 안에서만 움직이게 함
     var world = [[38.5, 125.5], [38.5, 129.5], [36.5, 129.5], [36.5, 125.5]];
     L.polygon([world, WOLGYE1_RING], { stroke: false, fillColor: "#ffffff", fillOpacity: 0.5, interactive: false }).addTo(map);
-    L.polygon(WOLGYE1_RING, { color: "#7c5cc4", weight: 2.5, dashArray: "6 5", fill: false, interactive: false }).addTo(map);
+    L.polygon(WOLGYE1_RING, { color: "#7c5cc4", weight: 2.5, fill: false, interactive: false }).addTo(map);
     var wb = wolgye1Bounds();
     map.setMaxBounds(wb.pad(0.35));
     map.options.maxBoundsViscosity = 0.9;
@@ -1754,7 +1798,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var ringPath = WOLGYE1_RING.map(function (p) { return new K.LatLng(p[0], p[1]); });
     var world = [[38.5, 125.5], [38.5, 129.5], [36.5, 129.5], [36.5, 125.5]].map(function (p) { return new K.LatLng(p[0], p[1]); });
     new K.Polygon({ map: map, path: [world, ringPath], strokeWeight: 0, fillColor: "#ffffff", fillOpacity: 0.5 });
-    new K.Polyline({ map: map, path: ringPath.concat([ringPath[0]]), strokeWeight: 3, strokeColor: "#7c5cc4", strokeOpacity: 0.95, strokeStyle: "dash" });
+    new K.Polyline({ map: map, path: ringPath.concat([ringPath[0]]), strokeWeight: 3, strokeColor: "#7c5cc4", strokeOpacity: 0.95, strokeStyle: "solid" });
     var wb = new K.LatLngBounds();
     ringPath.forEach(function (ll) { wb.extend(ll); });
     // 월계1동 밖으로 너무 멀리 끌고 가면 다시 안쪽으로 되돌림
@@ -2228,7 +2272,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     else if (parts[0] === "edit" && parts[1] && parts[2]) renderEditReport(decodeURIComponent(parts[1]), decodeURIComponent(parts[2]));
     else if (parts[0] === "submit") renderSubmit(parts[1] ? decodeURIComponent(parts[1]) : null);
     else if (parts[0] === "board") {
-      if (parts[1] === "write") renderBoardWrite();
+      if (parts[1] === "write") renderBoardWrite(decodeURIComponent(parts[2] || "자유"));
       else if (parts[1] === "c") renderBoard(decodeURIComponent(parts[2] || ""));
       else if (parts[1]) renderBoardPost(decodeURIComponent(parts[1]));
       else renderBoard("");
@@ -2437,10 +2481,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           "</button>" +
           '<button type="button" class="hs-map-close" id="hs-map-close" aria-label="지도 닫고 사진으로">✕ 지도 닫기</button>' +
           '<div class="hs-detail" id="hs-detail" aria-live="polite"></div>' +
-          '<div class="hs-notice"><div class="hs-notice-h">📌 공지사항</div><div id="notice-list" class="notice-list"></div></div>' +
+          '<div class="hs-notice">' +
+            '<div class="hs-ntabs"><button type="button" class="hs-nt on" data-nt="n">📌 공지사항</button><button type="button" class="hs-nt" data-nt="b">💬 종합게시판</button></div>' +
+            '<div class="hs-ncols" data-show="n">' +
+              '<div class="hs-ncol" data-col="n"><div class="hs-notice-h">📌 공지사항</div><div id="notice-list" class="notice-list"></div></div>' +
+              '<div class="hs-ncol" data-col="b"><div class="hs-notice-h">💬 종합게시판 <a class="hs-ngo" href="#/board">전체보기 ›</a></div><div id="bd-teaser" class="bd-teaser"></div></div>' +
+            "</div>" +
+          "</div>" +
         "</section>" +
         '<section class="hs-panel">' +
-          '<div class="bd-teaser" id="bd-teaser"></div>' +
           '<div class="hs-panel-top">' +
             '<div class="hs-count" id="hs-count">건물 불러오는 중…</div>' +
           "</div>" +
@@ -2694,7 +2743,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var hint = document.getElementById("map-hint");
       var noPos = noPosAll;
       if (hint) {
-        hint.textContent = "점선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 건물 이름 표시를 누르면 해당 건물이 아래에 떠요. 주황색 집은 근처 부동산이에요." +
+        hint.textContent = "보라색 선 안쪽이 월계1동이에요. 둥근 숫자 아이콘을 누르면 그 지역 건물이, 건물 이름 표시를 누르면 해당 건물이 아래에 떠요. 주황색 집은 근처 부동산이에요." +
           (noPos > 0
             ? (geoPending()
                 ? " (주소로 위치를 찾는 중인 건물 " + noPos + "곳)"
@@ -2961,6 +3010,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     });
     applyPfMode(); syncPfUi();
     mountBoardTeaser();
+    Array.prototype.forEach.call(document.querySelectorAll(".hs-nt"), function (t) {
+      t.addEventListener("click", function () {
+        Array.prototype.forEach.call(document.querySelectorAll(".hs-nt"), function (x) { x.classList.toggle("on", x === t); });
+        document.querySelector(".hs-ncols").setAttribute("data-show", t.getAttribute("data-nt"));
+      });
+    });
     qInput.addEventListener("input", paint);
     typeSel.addEventListener("change", paint);
 
@@ -3186,7 +3241,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         locMap = m;
         if (start) m.setView(start, 16); else m.fitWolgye();
         m.onClick(function (lat, lng) {
-          if (!inWolgye1(lat, lng)) { toast("월계1동(점선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
+          if (!inWolgye1(lat, lng)) { toast("월계1동(보라색 선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
           locLL = [lat, lng];
           if (!locMarker) locMarker = m.addHtml(locLL, '<div class="mk-dot"></div>', { z: 9 });
           else locMarker.setPos(locLL);
@@ -3563,7 +3618,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
               '<input type="text" id="b-search" style="width:100%" placeholder="건물명 또는 주소로 검색 (예: 빌라, 광운로)">' +
               '<div class="pick-results" id="pick-results" style="display:none"></div>' +
             "</div>" +
-            '<div class="map-hint" style="margin-top:10px">또는 지도에서 건물 점을 눌러 고르세요. 점선 안쪽이 월계1동이에요.</div>' +
+            '<div class="map-hint" style="margin-top:10px">또는 지도에서 건물 점을 눌러 고르세요. 보라색 선 안쪽이 월계1동이에요.</div>' +
             '<div id="pk-map" class="map-box" style="height:300px;margin-top:6px"></div>' +
           "</div>" +
           '<div id="mode-new-panel" style="display:none">' +
@@ -3719,7 +3774,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         nbMap = m;
         m.fitWolgye();
         m.onClick(function (lat, lng) {
-          if (!inWolgye1(lat, lng)) { toast("월계1동(점선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
+          if (!inWolgye1(lat, lng)) { toast("월계1동(보라색 선 안쪽) 안에서만 위치를 지정할 수 있어요."); return; }
           setNbLatLng([lat, lng]);
           document.getElementById("nb-map-hint").textContent = "📍 위치를 지정했어요. 다시 누르면 옮겨져요.";
         });
@@ -3913,7 +3968,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
             var ll = res[1];
             if (ll && !inWolgye1(ll[0], ll[1])) {
               nbLatLng = null;
-              hintEl.textContent = "⚠️ 이 주소는 월계1동(점선 안쪽) 밖으로 나와요. 월계1동 건물이 맞다면 지도에서 위치를 직접 눌러주세요.";
+              hintEl.textContent = "⚠️ 이 주소는 월계1동(보라색 선 안쪽) 밖으로 나와요. 월계1동 건물이 맞다면 지도에서 위치를 직접 눌러주세요.";
             } else if (ll) {
               setNbLatLng(ll);
               if (nbMap) nbMap.setView(ll, 17);
@@ -4064,7 +4119,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       }
       if (mode === "new" && (!nbLatLng || !inWolgye1(nbLatLng[0], nbLatLng[1]))) {
         var eb = document.getElementById("err-building");
-        eb.textContent = "월계1동 안의 건물만 등록할 수 있어요. 지도(점선 안쪽)에서 건물 위치를 눌러주세요.";
+        eb.textContent = "월계1동 안의 건물만 등록할 수 있어요. 지도(보라색 선 안쪽)에서 건물 위치를 눌러주세요.";
         eb.style.display = "";
         return;
       }
@@ -4288,7 +4343,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       '<div class="bd-wrap">' +
         '<div class="bd-head">' +
           '<div><h2>종합게시판</h2><p>월계1동 이웃끼리 익명으로 나누는 이야기</p></div>' +
-          '<a class="btn primary bd-write" href="#/board/write">✏️ 글쓰기</a>' +
+          '<a class="btn primary bd-write" id="bd-write" href="#/board/write/' + encodeURIComponent(cat || "자유") + '">✏️ ' + esc(cat || "자유") + " 글쓰기</a>" +
         "</div>" +
         '<div class="bd-tabs">' + [""].concat(BOARD_CATS).map(function (c) {
           return '<a href="#/board' + (c ? "/c/" + encodeURIComponent(c) : "") + '" class="bd-tab' + (c === cat ? " on" : "") + '">' + (c || "전체") + "</a>";
@@ -4303,7 +4358,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         if (!document.body.contains(meEl)) return;
         meEl.innerHTML = r
           ? '<div class="bd-me ok">내 글에는 <b>익명 · ' + esc(r.name) + " 거주중</b>으로 표시돼요.</div>"
-          : '<div class="bd-me">🏠 집을 인증하면 글과 댓글에 <b>"OO빌라 거주중"</b> 배지가 붙어요. <a href="#/submit">제보에서 계약서 인증하기 →</a></div>';
+          : '<div class="bd-me">🏠 거주 인증 전에는 <b>자유게시판</b>에만 글·댓글을 쓸 수 있어요. 집을 인증하면 모든 게시판을 쓸 수 있고 <b>"OO빌라 거주중"</b> 배지가 붙어요. <a href="#/submit">계약서로 인증하기 →</a></div>';
+        if (!r && !isAdmin() && cat && cat !== "자유") {
+          var wb = document.getElementById("bd-write");
+          if (wb) { wb.classList.add("locked"); wb.textContent = "🔒 거주 인증 후 글쓰기"; wb.setAttribute("href", "#/submit"); }
+        }
       });
     }
     if (!db) { document.getElementById("bd-list").innerHTML = '<div class="empty">지금은 게시판을 불러올 수 없어요.</div>'; return; }
@@ -4321,7 +4380,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         return '<a href="#/board/' + encodeURIComponent(p._id) + '"><span>' + esc(p.title) + '</span><em>👍 ' + (p.likeCount || 0) + "</em></a>";
       }).join("") + "</div>" : "";
       listEl.innerHTML = rows.length ? rows.map(bdItemHtml).join("") :
-        '<div class="empty">아직 글이 없어요.<div><a class="btn primary" href="#/board/write">첫 글 쓰기</a></div></div>';
+        '<div class="empty">아직 글이 없어요.<div><a class="btn primary" href="#/board/write/' + encodeURIComponent(cat || "자유") + '">첫 글 쓰기</a></div></div>';
     }, function () {
       var listEl = document.getElementById("bd-list");
       if (listEl) listEl.innerHTML = '<div class="empty">게시판을 불러오지 못했어요. (관리자: Firestore 규칙에 posts 규칙이 게시됐는지 확인해주세요)</div>';
@@ -4340,32 +4399,39 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     );
   }
 
-  function renderBoardWrite() {
+  function renderBoardWrite(cat) {
+    cat = BOARD_CATS.indexOf(cat) > -1 ? cat : "자유";
+    var back = "#/board" + (cat === "자유" ? "/c/" + encodeURIComponent("자유") : "/c/" + encodeURIComponent(cat));
     if (!currentUser) {
-      app.innerHTML = '<a class="back-link" href="#/board">← 게시판으로</a>' +
+      app.innerHTML = '<a class="back-link" href="' + back + '">← 게시판으로</a>' +
         '<div class="empty" style="margin-top:20px"><p>글을 쓰려면 로그인이 필요해요.<br>글에는 이름 없이 <b>익명</b>으로만 표시돼요.</p>' +
         '<div><button type="button" class="btn primary" id="bd-login">로그인</button></div></div>';
       document.getElementById("bd-login").addEventListener("click", function () { openAuthModal("login"); });
       return;
     }
     app.innerHTML =
-      '<a class="back-link" href="#/board">← 게시판으로</a>' +
-      '<div class="bd-wrap"><h2 style="margin:14px 0 4px;font-size:1.4rem">글쓰기</h2>' +
+      '<a class="back-link" href="' + back + '">← ' + esc(cat) + " 게시판으로</a>" +
+      '<div class="bd-wrap"><h2 style="margin:14px 0 4px;font-size:1.4rem"><span class="bd-cat bd-cat-lg">' + esc(cat) + "</span> 글쓰기</h2>" +
       '<div class="bd-as" id="bd-as">표시 이름 확인 중…</div>' +
-      '<div class="bd-form">' +
-        '<div class="field"><label class="main">카테고리</label><select id="bd-cat">' + BOARD_CATS.map(function (c) { return "<option>" + esc(c) + "</option>"; }).join("") + "</select></div>" +
+      '<div class="bd-form" id="bd-form">' +
         '<div class="field"><label class="main">제목</label><input type="text" id="bd-title" maxlength="80" placeholder="제목을 입력하세요"></div>' +
         '<div class="field"><label class="main">내용</label><textarea id="bd-body" rows="10" maxlength="5000" placeholder="월계1동 생활, 집 구하기, 동네 정보 등 자유롭게 나눠주세요."></textarea></div>' +
         '<div class="warn-box"><b>⚠️ 글 쓰기 전에</b><ul>' +
           "<li>특정인을 비방하거나 확인되지 않은 사실을 퍼뜨리면 <b>명예훼손</b>이 될 수 있어요.</li>" +
           "<li>이름·전화번호·호수 등 <b>개인을 알아볼 수 있는 정보</b>는 쓰지 마세요.</li>" +
           "<li>신고된 글은 관리자가 확인 후 숨기거나 삭제할 수 있어요.</li></ul></div>" +
-        '<div class="submit-bar"><a class="btn" href="#/board">취소</a><button type="button" class="btn primary" id="bd-submit">등록</button></div>' +
+        '<div class="submit-bar"><a class="btn" href="' + back + '">취소</a><button type="button" class="btn primary" id="bd-submit">등록</button></div>' +
       "</div></div>";
     var res = null, hideBadge = false;
     getResidence(currentUser.uid).then(function (r) {
       res = r;
       var el = document.getElementById("bd-as"); if (!el) return;
+      if (!r && !isAdmin() && cat !== "자유") {
+        el.innerHTML = "";
+        document.getElementById("bd-form").innerHTML = '<div class="empty" style="border:0">🔒 <b>' + esc(cat) + "</b> 게시판은 거주 인증한 이웃만 글을 쓸 수 있어요.<br>인증 전에는 자유게시판을 이용해주세요." +
+          '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a class="btn" href="#/board/write/' + encodeURIComponent("자유") + '">자유게시판에 쓰기</a><a class="btn primary" href="#/submit">계약서로 인증하기</a></div></div>';
+        return;
+      }
       function paintAs() {
         el.innerHTML = "이 글은 <b>익명</b>" + (res && !hideBadge ? " · " + bdBadge(res.name) : "") + "(으)로 표시돼요." +
           (res ? ' <label class="bd-hide"><input type="checkbox" id="bd-hidebadge"' + (hideBadge ? " checked" : "") + "> 거주 배지 숨기기</label>" : ' <a href="#/submit">집 인증하기 →</a>');
@@ -4380,7 +4446,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       if (bdHasPersonal(title + " " + body)) { toast("전화번호·주민번호처럼 보이는 내용이 있어요. 지우고 다시 등록해주세요."); return; }
       var btn = this; btn.disabled = true; btn.textContent = "등록 중…";
       db.collection("posts").add({
-        title: title, body: body, category: document.getElementById("bd-cat").value,
+        title: title, body: body, category: cat,
         authorUid: currentUser.uid,
         badge: res && !hideBadge ? res.name : null,
         likeCount: 0, commentCount: 0,
@@ -4396,7 +4462,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     app.innerHTML = '<a class="back-link" href="#/board">← 게시판으로</a><div class="bd-wrap" id="bd-post"><div class="empty">불러오는 중…</div></div>';
     if (!db) return;
     var post = null, comments = [], liked = false, res = null;
-    if (currentUser) getResidence(currentUser.uid).then(function (r) { res = r; });
+    if (currentUser) getResidence(currentUser.uid).then(function (r) { res = r; if (post) paint(); });
     function anonOf(uid) {
       if (post && uid === post.authorUid) return "글쓴이";
       var seen = [];
@@ -4433,7 +4499,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
               (me || admin ? '<button type="button" class="bd-cdel" data-cid="' + esc(c._id) + '">삭제</button>' : "") + "</div>" +
               '<div class="bd-cmt-b">' + esc(c.body).replace(/\n/g, "<br>") + "</div></div>";
           }).join("") +
-          (currentUser
+          (currentUser && post.category !== "자유" && !res && !admin
+            ? '<div class="bd-cmt-form login"><span class="bd-lock">🔒 이 게시판은 거주 인증한 이웃만 댓글을 쓸 수 있어요. <a href="#/submit">인증하기 →</a></span></div>'
+            : currentUser
             ? '<div class="bd-cmt-form"><textarea id="bd-cmt" rows="2" maxlength="1000" placeholder="댓글을 남겨주세요 (익명)"></textarea><button type="button" class="btn primary" id="bd-cmt-send">등록</button></div>'
             : '<div class="bd-cmt-form login"><button type="button" class="btn" id="bd-cmt-login">로그인하고 댓글 쓰기</button></div>') +
         "</section>";
@@ -4509,12 +4577,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var unsub = db.collection("posts").orderBy("createdAt", "desc").limit(8).onSnapshot(function (snap) {
       var rows = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); }).filter(function (p) { return !p.hidden; }).slice(0, 3);
       el.innerHTML =
-        '<div class="bdt-h"><a href="#/board"><b>💬 종합게시판</b><span>이웃들의 익명 이야기</span></a><a class="bdt-go" href="#/board">전체보기 ›</a></div>' +
         (rows.length ? rows.map(function (p) {
           return '<a class="bdt-row" href="#/board/' + encodeURIComponent(p._id) + '"><span class="bd-cat">' + esc(p.category || "자유") + '</span><span class="bdt-t">' + esc(p.title) + '</span><em>💬 ' + (p.commentCount || 0) + "</em></a>";
-        }).join("") : '<a class="bdt-row empty-row" href="#/board/write">아직 글이 없어요. 첫 글을 남겨보세요 ✏️</a>');
+        }).join("") : '<a class="bdt-row empty-row" href="#/board/write/%EC%9E%90%EC%9C%A0">아직 글이 없어요. 첫 글을 남겨보세요 ✏️</a>') +
+        '<a class="bdt-more" href="#/board">게시판 전체보기 ›</a>';
     }, function () {
-      el.innerHTML = '<div class="bdt-h"><a href="#/board"><b>💬 종합게시판</b><span>이웃들의 익명 이야기</span></a><a class="bdt-go" href="#/board">바로가기 ›</a></div>';
+      el.innerHTML = '<a class="bdt-row empty-row" href="#/board">게시판 바로가기 ›</a>';
     });
     track(unsub);
   }
