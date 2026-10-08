@@ -4777,9 +4777,44 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       '<div id="notice-admin-list" class="r-list" style="margin-top:14px"><p class="intro">불러오는 중...</p></div>' +
 
       '<div class="section-h" style="margin-top:40px"><h3>💬 문의 · 🚩 신고 접수함</h3></div>' +
-      '<div id="msg-admin-list" class="r-list" style="margin-top:10px"><p class="intro">불러오는 중...</p></div>';
+      '<div id="msg-admin-list" class="r-list" style="margin-top:10px"><p class="intro">불러오는 중...</p></div>' +
+
+      '<div class="section-h" style="margin-top:40px"><h3>🧹 개인정보 정리</h3></div>' +
+      '<p class="intro" style="padding-top:6px">누구나 읽을 수 있는 제보·건물·공지 데이터에 남아 있는 이메일(예전 버전에서 저장된 작성자·관리자 이메일)을 찾아서 지워요. 후기 내용은 그대로예요.</p>' +
+      '<div class="submit-bar" style="justify-content:flex-start;margin-top:10px"><button type="button" class="btn primary" id="scrub-btn">공개 데이터에서 이메일 지우기</button></div>' +
+      '<div id="scrub-status" class="map-hint"></div>';
 
     document.getElementById("seed-btn").addEventListener("click", seedDemoData);
+    document.getElementById("scrub-btn").addEventListener("click", function () {
+      var btn = this, st = document.getElementById("scrub-status");
+      var FV = firebase.firestore.FieldValue;
+      function isEmail(v) { return typeof v === "string" && v.indexOf("@") > -1; }
+      btn.disabled = true; st.textContent = "찾는 중…";
+      Promise.all([firestore.collectionGroup("reports").get(), firestore.collection("buildings").get(), firestore.collection("notices").get()]).then(function (res) {
+        var jobs = [];
+        res[0].docs.forEach(function (d) {
+          var x = d.data(), u = {};
+          if ("authorEmail" in x && x.authorEmail !== null) u.authorEmail = FV && FV.delete ? FV.delete() : null;
+          if (isEmail(x.hiddenBy)) u.hiddenBy = "admin";
+          if (x.verification && isEmail(x.verification.reviewedBy)) u["verification.reviewedBy"] = "admin";
+          if (Object.keys(u).length) jobs.push([d.ref, u]);
+        });
+        res[1].docs.forEach(function (d) { if (isEmail(d.data().nameEditedBy)) jobs.push([d.ref, { nameEditedBy: "admin" }]); });
+        res[2].docs.forEach(function (d) { if (isEmail(d.data().createdBy)) jobs.push([d.ref, { createdBy: "admin" }]); });
+        if (!jobs.length) { st.textContent = "✅ 지울 이메일이 없어요. 이미 깨끗해요."; btn.disabled = false; return; }
+        st.textContent = jobs.length + "건 정리 중…";
+        var done = 0, fail = 0;
+        var chain = Promise.resolve();
+        jobs.forEach(function (j) {
+          chain = chain.then(function () { return j[0].update(j[1]).then(function () { done++; }, function () { fail++; }); })
+            .then(function () { st.textContent = (done + fail) + " / " + jobs.length + "건 처리 중…"; });
+        });
+        return chain.then(function () {
+          st.textContent = "✅ " + done + "건에서 이메일을 지웠어요." + (fail ? " (" + fail + "건 실패 — 다시 눌러보세요)" : "");
+          btn.disabled = false;
+        });
+      }).catch(function (e) { st.textContent = "실패: " + (e.message || ""); btn.disabled = false; });
+    });
     var colBtn = document.getElementById("col-start");
     if (colBtn) colBtn.addEventListener("click", function () { runWolgyeCollector(colBtn); });
     document.getElementById("notice-add-btn").addEventListener("click", function () {
