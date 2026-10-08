@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>집속사정</title>
+<!-- 앱(PWA) 설치용 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7c5cc4">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="집속사정">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Black+Han+Sans&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -1107,6 +1116,17 @@
   .pf-bubble.on::after { background: var(--accent) !important; border-color: var(--accent) !important; }
   .sky-thumb .rvbox { position: absolute; left: 0; top: 0; width: 200%; height: 200%; transform: scale(.5); transform-origin: 0 0; }
   .sky-thumb [id^="_str_"], .sky-thumb [id^="rtxt_"], .sky-thumb [id^="back_rtxt_"], .sky-thumb [id^="text_rtxt_"] { display: none !important; }
+  .install-bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1200; width: min(440px, calc(100% - 24px)); display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; background: #fff; border: 1px solid #e6e3ee; border-radius: 16px; box-shadow: 0 10px 30px rgba(30,20,60,.18); animation: ibUp .35s ease; }
+  .install-bar img { width: 40px; height: 40px; border-radius: 10px; flex: none; }
+  .install-bar .ib-t { flex: 1; min-width: 0; font-size: 0.86rem; line-height: 1.35; }
+  .install-bar .ib-t b { display: block; font-size: 0.9rem; }
+  .install-bar .ib-t span { color: #777; font-size: 0.78rem; }
+  .install-bar .ib-t span b { display: inline; font-size: inherit; color: var(--accent-strong); }
+  .install-bar .ib-go { padding: 8px 16px; flex: none; }
+  .install-bar .ib-x { border: 0; background: none; color: #999; font-size: 1rem; cursor: pointer; padding: 6px; flex: none; }
+  @keyframes ibUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  /* 앱으로 실행 중일 때: 아이폰 노치·홈바 여백 */
+  html.is-app body { padding-bottom: env(safe-area-inset-bottom); }
 </style>
 </head>
 <body>
@@ -2257,6 +2277,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   function signInWithGoogle() {
     var provider = new firebase.auth.GoogleAuthProvider();
     return auth.signInWithPopup(provider).catch(function (e) {
+      // 앱(홈 화면 설치)·일부 브라우저는 팝업을 막아서, 같은 화면 이동 방식으로 다시 시도
+      if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment" || e.code === "auth/web-storage-unsupported")) {
+        return auth.signInWithRedirect(provider);
+      }
+      if (e && e.code === "auth/popup-closed-by-user") throw e;
       toast("로그인에 실패했어요. 다시 시도해주세요.");
       throw e;
     });
@@ -5580,6 +5605,43 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   db = firestore;
   dbState = "ready";
   updateUnlockBadge();
+  // ---------------- 앱 설치 (PWA) ----------------
+  if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+  (function () {
+    var standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone;
+    if (standalone) { document.documentElement.classList.add("is-app"); return; }
+    function dismissed() { try { return localStorage.getItem("wg_install_dismissed") === "1"; } catch (e) { return false; } }
+    function dismiss() { try { localStorage.setItem("wg_install_dismissed", "1"); } catch (e) {} }
+    var deferred = null;
+    function showBar(html, onInstall) {
+      if (dismissed() || document.getElementById("install-bar")) return;
+      var bar = document.createElement("div");
+      bar.id = "install-bar"; bar.className = "install-bar";
+      bar.innerHTML = '<img src="icons/icon-192.png" alt=""><div class="ib-t">' + html + "</div>" +
+        (onInstall ? '<button type="button" class="btn primary ib-go">설치</button>' : "") +
+        '<button type="button" class="ib-x" aria-label="닫기">✕</button>';
+      document.body.appendChild(bar);
+      bar.querySelector(".ib-x").addEventListener("click", function () { dismiss(); bar.remove(); });
+      if (onInstall) bar.querySelector(".ib-go").addEventListener("click", function () { onInstall(bar); });
+    }
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault(); deferred = e;
+      showBar("<b>집속사정 앱 설치</b><span>홈 화면에서 바로 열 수 있어요</span>", function (bar) {
+        deferred.prompt();
+        deferred.userChoice.then(function () { bar.remove(); deferred = null; });
+      });
+    });
+    window.addEventListener("appinstalled", function () { var b = document.getElementById("install-bar"); if (b) b.remove(); dismiss(); });
+    // 아이폰 사파리는 설치 버튼이 없어서 방법을 안내
+    var ua = navigator.userAgent || "";
+    var iOS = /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+    if (iOS) setTimeout(function () {
+      showBar("<b>홈 화면에 추가하면 앱처럼 쓸 수 있어요</b><span>아래 공유 버튼 <b>⬆︎</b> → <b>홈 화면에 추가</b></span>", null);
+    }, 2500);
+  })();
+
   auth.onAuthStateChanged(function (user) {
     currentUser = user;
     updateAuthUI();
