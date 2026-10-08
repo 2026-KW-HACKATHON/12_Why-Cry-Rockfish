@@ -1099,6 +1099,14 @@
   @media (min-width: 761px) { .hs-map-btn { left: 50%; transform: translateX(-50%); bottom: 28px; } .hs-map-btn:hover { transform: translateX(-50%) translateY(-2px); } .hs-hero.map-on .hs-map-btn { transform: translateX(-50%) translateY(8px); } }
   #q::placeholder { font-size: 0.86rem; }
   .sky-thumb .sat2x { position: absolute; left: 0; top: 0; width: 200%; height: 200%; transform: scale(.5); transform-origin: 0 0; }
+  .pf-hrow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .pf-val { font-size: 1.02rem; font-weight: 800; color: #9b97a8; letter-spacing: -0.02em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pf-val.on { color: var(--accent-strong); font-size: 1.12rem; }
+  .pf-bubble { font-size: 0.8rem !important; font-weight: 800; }
+  .pf-bubble.on { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; }
+  .pf-bubble.on::after { background: var(--accent) !important; border-color: var(--accent) !important; }
+  .sky-thumb .rvbox { position: absolute; left: 0; top: 0; width: 200%; height: 200%; transform: scale(.5); transform-origin: 0 0; }
+  .sky-thumb [id^="_str_"], .sky-thumb [id^="rtxt_"], .sky-thumb [id^="back_rtxt_"], .sky-thumb [id^="text_rtxt_"] { display: none !important; }
 </style>
 </head>
 <body>
@@ -1959,6 +1967,13 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     return '<div class="sky-thumb" data-lat="' + ll[0] + '" data-lng="' + ll[1] + '"></div>';
   }
   var thumbObserver = null, thumbQ = [], thumbBusy = false;
+  var rvPanoCache = {}, liveRv = [], RV_MAX = (window.matchMedia && matchMedia("(max-width: 760px)").matches) ? 5 : 10;
+  function unloadRv(el) {
+    if (!el) return;
+    var i = liveRv.indexOf(el); if (i > -1) liveRv.splice(i, 1);
+    el.innerHTML = ""; el.classList.remove("on"); el.classList.remove("rv");
+    el.removeAttribute("data-live"); el.removeAttribute("data-q");
+  }
   function thumbPump() {
     if (thumbBusy) return;
     var fn = thumbQ.shift();
@@ -1973,7 +1988,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     return (b + 360) % 360;
   }
   function hydrateSkyThumbs(root) {
-    var els = (root || document).querySelectorAll(".sky-thumb:not([data-obs]):not([data-live])");
+    var els = (root || document).querySelectorAll(".sky-thumb:not([data-obs])");
     if (!els.length) return;
     loadKakao().then(function (kakao) {
       var K = kakao.maps;
@@ -1992,6 +2007,32 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       function drawNow(el) {
         el.setAttribute("data-live", "1");
         var lat = Number(el.getAttribute("data-lat")), lng = Number(el.getAttribute("data-lng"));
+        var pkey = lat.toFixed(6) + "," + lng.toFixed(6);
+        function go(panoId) {
+          if (!document.body.contains(el) || el.getAttribute("data-live") !== "1") return;
+          if (panoId) drawRv(el, panoId, lat, lng); else drawSky(el, lat, lng);
+        }
+        if (pkey in rvPanoCache) go(rvPanoCache[pkey]);
+        else new K.RoadviewClient().getNearestPanoId(new K.LatLng(lat, lng), 50, function (id) { rvPanoCache[pkey] = id || null; go(id); });
+      }
+      // 로드뷰 썸네일: 화면에 보이는 행에만 작은 로드뷰를 띄우고(건물 쪽을 바라보게), 동시에 RV_MAX개까지만 유지
+      function drawRv(el, panoId, lat, lng) {
+        try {
+          el.classList.add("rv");
+          el.innerHTML = '<div class="rvbox"></div>';
+          var rv = new K.Roadview(el.firstChild);
+          rv.setPanoId(panoId, new K.LatLng(lat, lng));
+          K.event.addListener(rv, "init", function () {
+            var from = rv.getPosition();
+            rv.setViewpoint(new K.Viewpoint(bearingDeg(from.getLat(), from.getLng(), lat, lng), 3, -1));
+            el.classList.add("on");
+          });
+          liveRv.push(el);
+          while (liveRv.length > RV_MAX) unloadRv(liveRv.shift());
+        } catch (e) { drawSky(el, lat, lng); }
+      }
+      function drawSky(el, lat, lng) {
+        el.classList.remove("rv");
         try {
           // 레티나 화면에서도 선명하게: 2배 크기로 받아서 절반으로 줄여 표시
           el.innerHTML = '<div class="sat2x"></div>';
@@ -2008,10 +2049,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       if (!("IntersectionObserver" in window)) { Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); draw(el); }); return; }
       if (!thumbObserver) thumbObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
-          if (!document.body.contains(en.target) || en.target.getAttribute("data-live")) { thumbObserver.unobserve(en.target); return; }
-          if (en.isIntersecting) draw(en.target);
+          var el = en.target;
+          if (!document.body.contains(el)) { thumbObserver.unobserve(el); return; }
+          if (en.isIntersecting) draw(el);
+          else if (el.classList.contains("rv")) unloadRv(el); // 화면 밖 로드뷰는 내려서 가볍게 (위성사진은 유지)
         });
-      }, { rootMargin: "200px 0px" });
+      }, { rootMargin: "120px 0px" });
       Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); thumbObserver.observe(el); });
     }).catch(function () {});
   }
@@ -2490,10 +2533,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<div class="pf" id="pf">' +
             '<div class="pf-sec"><div class="pf-h">거래유형</div>' +
               '<div class="pf-chips" id="pf-deal"><button type="button" class="pf-chip on" data-deal="월세">월세</button><button type="button" class="pf-chip" data-deal="전세">전세</button><button type="button" class="pf-chip" data-deal="매매">매매</button></div></div>' +
-            '<div class="pf-sec"><div class="pf-h" id="pf-dh">보증금</div>' +
+            '<div class="pf-sec"><div class="pf-hrow"><div class="pf-h" id="pf-dh">보증금</div><b class="pf-val" id="pf-dval">전체</b></div>' +
               '<div class="pf-slider" id="pf-dr"><span class="pf-bubble" id="pf-dv">전체</span><div class="pf-range"><input type="range" id="pf-dmin" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="0" aria-label="보증금 최소"><input type="range" id="pf-dmax" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="' + (PF_DEP.length - 1) + '" aria-label="보증금 최대"></div>' +
               '<div class="pf-ticks" id="pf-dticks"></div></div></div>' +
-            '<div class="pf-sec" id="pf-rsec"><div class="pf-h">월세</div>' +
+            '<div class="pf-sec" id="pf-rsec"><div class="pf-hrow"><div class="pf-h">월세</div><b class="pf-val" id="pf-rval">전체</b></div>' +
               '<div class="pf-slider" id="pf-rr"><span class="pf-bubble" id="pf-rv">전체</span><div class="pf-range"><input type="range" id="pf-rmin" min="0" max="' + (PF_RENT.length - 1) + '" step="1" value="0" aria-label="월세 최소"><input type="range" id="pf-rmax" min="0" max="' + (PF_RENT.length - 1) + '" step="1" value="' + (PF_RENT.length - 1) + '" aria-label="월세 최대"></div>' +
               '<div class="pf-ticks"><span style="left:0">최소</span><span style="left:' + pfPos(PF_RENT, 50) + '%">50만</span><span style="left:' + pfPos(PF_RENT, 100) + '%">100만</span><span style="left:100%">최대</span></div></div></div>' +
             '<div class="pf-foot"><span id="pf-note">조건에 맞는 집만 목록과 지도에 보여요.</span><button type="button" class="pf-reset" id="pf-reset">↺ 초기화</button></div>' +
@@ -2969,6 +3012,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var dv = document.getElementById("pf-dv"), rv = document.getElementById("pf-rv");
       dv.textContent = lab(p.dmin, p.dmax, depArr(), p.ia, p.ib);
       rv.textContent = lab(p.rmin, p.rmax, PF_RENT, p.ic, p.id);
+      // 제목 오른쪽에 현재 범위를 크게 표시 (하한 ~ 상한)
+      function big(arr, iLo, iHi) {
+        var top = iHi >= arr.length - 1;
+        if (iLo === 0 && top) return "전체";
+        return (iLo === 0 ? "최소" : fmtMan(arr[iLo])) + " ~ " + (top ? "최대" : fmtMan(arr[iHi]));
+      }
+      var dvb = document.getElementById("pf-dval"), rvb = document.getElementById("pf-rval");
+      if (dvb) { dvb.textContent = big(depArr(), p.ia, p.ib); dvb.classList.toggle("on", p.depOn); }
+      if (rvb) { rvb.textContent = big(PF_RENT, p.ic, p.id); rvb.classList.toggle("on", p.rentOn); }
       function setBar(id, lo, hi, n) {
         var el = document.getElementById(id), A = lo / (n - 1) * 100, B = hi / (n - 1) * 100;
         el.style.setProperty("--a", A + "%"); el.style.setProperty("--b", B + "%"); el.style.setProperty("--mf", String((A + B) / 200));
