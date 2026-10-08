@@ -285,6 +285,72 @@
   .bld-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
   .bld-chip i { font-style: normal; font-weight: 500; color: var(--ink-muted); }
   .bld-src { margin-top: 6px; font-size: 0.7rem; color: var(--ink-muted); }
+  /* ---- 종합게시판 (블라인드 느낌) ---- */
+  .bd-wrap { max-width: 760px; margin: 0 auto; }
+  .bd-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: 18px; }
+  .bd-head h2 { margin: 0; font-size: 1.6rem; letter-spacing: -0.03em; }
+  .bd-head p { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.88rem; }
+  .bd-write { flex: none; }
+  .bd-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 16px 0 10px; padding-bottom: 4px; scrollbar-width: none; }
+  .bd-tab { flex: none; padding: 7px 14px; border-radius: 999px; border: 1px solid #e2e2e8; background: #fff; color: #555; font-size: 0.86rem; font-weight: 700; text-decoration: none; }
+  .bd-tab.on { background: #222; border-color: #222; color: #fff; }
+  .bd-me { font-size: 0.82rem; color: #555; background: #f6f6f8; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .bd-me a { color: var(--accent-strong); font-weight: 700; }
+  .bd-me.ok { background: var(--accent-soft); color: var(--accent-strong); }
+  .bd-hot { border: 1px solid #ffe1d2; background: #fff8f4; border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; }
+  .bd-hot-h { font-weight: 800; font-size: 0.86rem; color: #e0531f; margin-bottom: 4px; }
+  .bd-hot a { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; color: var(--ink); text-decoration: none; font-size: 0.9rem; }
+  .bd-hot a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bd-hot a em { font-style: normal; color: #e0531f; font-size: 0.78rem; flex: none; }
+  .bd-list { background: #fff; border: 1px solid #ececf0; border-radius: 14px; overflow: hidden; }
+  .bd-item { display: block; padding: 14px 16px; border-bottom: 1px solid #f0f0f3; color: var(--ink); text-decoration: none; }
+  .bd-item:last-child { border-bottom: 0; }
+  .bd-item:hover { background: #fafafb; }
+  .bd-item.is-hidden { opacity: .5; }
+  .bd-meta-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .bd-cat { font-size: 0.72rem; font-weight: 800; color: #666; background: #f1f1f4; border-radius: 4px; padding: 2px 6px; }
+  .bd-badge { font-size: 0.74rem; font-weight: 700; color: #2f6c9e; background: #eaf3fb; border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+  .bd-badge.none { color: #999; background: transparent; padding: 2px 0; font-weight: 500; }
+  .bd-title { margin-top: 6px; font-weight: 800; font-size: 1.02rem; letter-spacing: -0.02em; }
+  .bd-prev { margin-top: 4px; color: #666; font-size: 0.86rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .bd-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.76rem; color: #999; }
+  .bd-cnt { color: #888; font-size: 0.78rem; }
+  .bd-as { font-size: 0.85rem; color: #555; margin-bottom: 8px; }
+  .bd-as a { color: var(--accent-strong); font-weight: 700; }
+  .bd-hide { margin-left: 6px; font-size: 0.8rem; color: #777; white-space: nowrap; }
+  .bd-form { background: #fff; border: 1px solid #ececf0; border-radius: 14px; padding: 4px 16px 16px; }
+  .bd-article { background: #fff; border: 1px solid #ececf0; border-radius: 14px; padding: 18px; margin-top: 14px; }
+  .bd-h { margin: 8px 0 12px; font-size: 1.3rem; letter-spacing: -0.03em; }
+  .bd-author { display: flex; gap: 10px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid #f0f0f3; font-size: 0.88rem; }
+  .bd-av { width: 36px; height: 36px; border-radius: 50%; background: #f1f1f4; display: grid; place-items: center; font-size: 1.1rem; flex: none; }
+  .bd-sub { font-size: 0.74rem; color: #999; margin-left: 4px; }
+  .bd-author .bd-sub { margin: 2px 0 0; }
+  .bd-body { padding: 16px 0; font-size: 0.97rem; line-height: 1.7; word-break: break-word; }
+  .bd-actions { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid #f0f0f3; flex-wrap: wrap; }
+  .bd-like { border: 1px solid #e2e2e8; background: #fff; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+  .bd-like.on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
+  .bd-tools { margin-left: auto; display: flex; gap: 4px; }
+  .bd-tools button, .bd-cdel { border: 0; background: none; color: #999; font: inherit; font-size: 0.78rem; cursor: pointer; padding: 4px 6px; }
+  .bd-cmts { background: #fff; border: 1px solid #ececf0; border-radius: 14px; margin-top: 10px; overflow: hidden; }
+  .bd-cmt { padding: 12px 16px; border-bottom: 1px solid #f0f0f3; }
+  .bd-cmt.op .bd-cmt-h > b { color: var(--accent-strong); }
+  .bd-cmt-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.84rem; }
+  .bd-cdel { margin-left: auto; }
+  .bd-cmt-b { margin-top: 4px; font-size: 0.92rem; line-height: 1.6; word-break: break-word; }
+  .bd-cmt-form { display: flex; gap: 8px; padding: 12px; align-items: flex-end; }
+  .bd-cmt-form textarea { flex: 1; min-width: 0; resize: vertical; }
+  .bd-cmt-form.login { justify-content: center; }
+  .bd-teaser { background: #fff; border: 1px solid #ececf0; border-radius: 14px; padding: 12px 14px 6px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(20,20,40,.04); }
+  .bdt-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .bdt-h a { text-decoration: none; color: var(--ink); }
+  .bdt-h b { font-size: 0.98rem; }
+  .bdt-h span { font-size: 0.76rem; color: #999; margin-left: 6px; }
+  .bdt-go { font-size: 0.8rem; color: #777 !important; font-weight: 700; flex: none; }
+  .bdt-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid #f3f3f5; color: var(--ink); text-decoration: none; font-size: 0.88rem; }
+  .bdt-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bdt-row em { font-style: normal; font-size: 0.74rem; color: #999; flex: none; }
+  .bdt-row.empty-row { color: #888; font-size: 0.84rem; }
+  @media (max-width: 600px) { .bd-head h2 { font-size: 1.35rem; } .bd-article { padding: 16px 14px; } }
   .lbl-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .lbl-row .main { margin: 0; }
   .fee-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 600; color: var(--ink-muted); cursor: pointer; white-space: nowrap; user-select: none; }
@@ -2156,11 +2222,17 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     cleanup();
     var hash = location.hash.replace(/^#\/?/, "");
     var parts = hash.split("/").filter(Boolean);
-    document.body.classList.toggle("form-page", parts[0] === "submit" || parts[0] === "edit");
+    document.body.classList.toggle("form-page", parts[0] === "submit" || parts[0] === "edit" || parts[0] === "board");
     window.scrollTo(0, 0);
     if (parts[0] === "building" && parts[1]) renderDetail(decodeURIComponent(parts[1]));
     else if (parts[0] === "edit" && parts[1] && parts[2]) renderEditReport(decodeURIComponent(parts[1]), decodeURIComponent(parts[2]));
     else if (parts[0] === "submit") renderSubmit(parts[1] ? decodeURIComponent(parts[1]) : null);
+    else if (parts[0] === "board") {
+      if (parts[1] === "write") renderBoardWrite();
+      else if (parts[1] === "c") renderBoard(decodeURIComponent(parts[2] || ""));
+      else if (parts[1]) renderBoardPost(decodeURIComponent(parts[1]));
+      else renderBoard("");
+    }
     else if (parts[0] === "profile") renderProfile();
     else if (parts[0] === "admin") renderAdmin();
     else renderHome();
@@ -2368,6 +2440,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<div class="hs-notice"><div class="hs-notice-h">📌 공지사항</div><div id="notice-list" class="notice-list"></div></div>' +
         "</section>" +
         '<section class="hs-panel">' +
+          '<div class="bd-teaser" id="bd-teaser"></div>' +
           '<div class="hs-panel-top">' +
             '<div class="hs-count" id="hs-count">건물 불러오는 중…</div>' +
           "</div>" +
@@ -2887,6 +2960,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       syncPfUi(); paint();
     });
     applyPfMode(); syncPfUi();
+    mountBoardTeaser();
     qInput.addEventListener("input", paint);
     typeSel.addEventListener("change", paint);
 
@@ -3576,7 +3650,6 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
               '<span class="star-wrap">' + starsHtml(0, "xl") + '<input type="range" id="rating" min="0" max="5" step="0.5" value="0" aria-label="별점 (0.5점 단위)"></span>' +
               '<b id="rating-val">선택해주세요</b>' +
             "</div>" +
-            '<div class="map-hint" style="margin-top:4px">별을 누르거나 끌어서 0.5점 단위로 고를 수 있어요. 별 왼쪽 절반을 누르면 반 개예요.</div>' +
             '<div class="field-error" id="err-rating" style="display:none">별점을 선택해주세요.</div>' +
           "</div>" +
           '<div class="field"><label class="main">거주 시기 (선택)</label>' +
@@ -3604,11 +3677,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<legend>신뢰도 정보 (선택)</legend>' +
           '<div class="field"><label class="main">지금 이 집에 사시나요?</label><select id="residencyStatus">' + options(RESIDENCY_STATUS, "선택 안 함") + "</select></div>" +
           '<p style="margin:8px 0 0;font-size:0.8rem;color:var(--ink-muted)">아직 거주 중인 제보는 다음 세입자를 구하려는 목적이 섞여 있을 수 있어요. 이미 퇴거하신 분의 제보라면 밝혀주시면 다른 사람이 더 믿을 수 있어요.</p>' +
-          (window.__CONTRACT_UPLOAD__ ? '<div class="field">' +
+          ('<div class="field">' +
             '<label class="main">임대차계약서 사진 (선택, 검토 후 인증 배지가 붙어요)</label>' +
             '<input type="file" id="contractFile" accept="image/*">' +
-            '<p class="hint">이름·연락처·계좌·주민번호는 반드시 가리고, 주소·호수·계약기간만 보이게 찍어주세요. 관리자가 직접 검토해서 "계약서 인증 완료" 표시를 붙여드려요 (보통 1~2일 내). 사진은 관리자에게만 보이고 다른 방문자에게는 공개되지 않아요.</p>' +
-          "</div>" : "") +
+            '<p class="hint">이름·연락처·계좌·주민번호는 반드시 가리고, 주소·호수·계약기간만 보이게 찍어주세요. 관리자가 직접 검토해서 "계약서 인증 완료" 표시를 붙여드려요 (보통 1~2일 내). 사진은 관리자에게만 보이고 다른 방문자에게는 공개되지 않아요. 인증되면 게시판 글에 <b>"OO빌라 거주중"</b> 배지가 붙어요.</p>' +
+          "</div>") +
         "</fieldset>" +
 
         '<div class="submit-bar">' +
@@ -4052,6 +4125,31 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           im.src = url;
         });
       }
+      // 계약서 사진: Storage 없이 관리자만 읽을 수 있는 contract_files/{reportId} 문서에 저장
+      function shrinkContract(file) {
+        return new Promise(function (res) {
+          var url = URL.createObjectURL(file), im = new Image();
+          im.onload = function () {
+            var sc = Math.min(1, 1500 / Math.max(im.width, im.height)), c = document.createElement("canvas");
+            c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            URL.revokeObjectURL(url);
+            var q = 0.85, out = c.toDataURL("image/jpeg", q);
+            while (out.length > 700000 && q > 0.35) { q -= 0.1; out = c.toDataURL("image/jpeg", q); }
+            res(out.length <= 850000 ? out : null);
+          };
+          im.onerror = function () { URL.revokeObjectURL(url); res(null); };
+          im.src = url;
+        });
+      }
+      function saveContract(bid, rid) {
+        return shrinkContract(contractFile).then(function (img) {
+          if (!img) throw new Error("contract-image");
+          return db.doc("contract_files/" + rid).set({ uid: currentUser.uid, buildingId: bid, reportId: rid, image: img, createdAt: new Date().toISOString() });
+        }).then(function () {
+          return { status: "pending", fileId: rid, submittedAt: new Date().toISOString() };
+        });
+      }
       function uploadPhotos(bid, rid, base) {
         if (!photoFiles.length) return Promise.resolve();
         return Promise.all(photoFiles.map(function (f) { return shrink(f); })).then(function (urls) {
@@ -4070,14 +4168,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         var editReportRef = db.doc("buildings/" + editCtx.buildingId + "/reports/" + editCtx.reportId);
         var editChain = Promise.resolve();
         if (contractFile) {
-          var editPath = "contracts/" + editCtx.reportId + "_" + Date.now();
-          editChain = storage.ref().child(editPath).put(contractFile).then(function (snap) {
-            return snap.ref.getDownloadURL();
-          }).then(function (url) {
-            reportData.verification = { status: "pending", imageUrl: url, submittedAt: new Date().toISOString() };
-          }).catch(function () {
-            // 업로드 실패해도 나머지 수정 내용은 저장되도록 조용히 넘어감
-          });
+          editChain = saveContract(editCtx.buildingId, editCtx.reportId).then(function (v) {
+            reportData.verification = v;
+          }).catch(function () { toast("계약서 사진을 올리지 못했어요. 나머지 수정 내용만 저장할게요."); });
         }
         editChain.then(function () {
           return editReportRef.update(reportData);
@@ -4129,13 +4222,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         return db.collection("buildings/" + buildingId + "/reports").add(reportData).then(function (reportRef) {
           var chain = Promise.resolve();
           if (contractFile) {
-            var path = "contracts/" + reportRef.id + "_" + Date.now();
-            chain = storage.ref().child(path).put(contractFile).then(function (snap) {
-              return snap.ref.getDownloadURL();
-            }).then(function (url) {
-              return reportRef.update({
-                verification: { status: "pending", imageUrl: url, submittedAt: new Date().toISOString() }
-              });
+            chain = saveContract(buildingId, reportRef.id).then(function (v) {
+              return reportRef.update({ verification: v });
             }).catch(function () {
               // 업로드 실패해도 제보 자체는 이미 저장됐으니 조용히 넘어감(계약서 인증만 못 붙음)
             });
@@ -4161,6 +4249,274 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         toast(dbErrorMessage(e));
       });
     }
+  }
+
+  // ---------------- 종합게시판 (익명 커뮤니티) ----------------
+  // posts/{id}: title, body, category, authorUid, badge(거주 인증 건물명|null), likeCount, commentCount, createdAt, hidden?
+  // posts/{id}/comments/{cid}: body, authorUid, badge, createdAt / posts/{id}/likes/{uid}
+  // residences/{uid}: 관리자가 계약서 인증을 승인하면 생기는 거주 인증 ({ name, buildingId })
+  var BOARD_CATS = ["자유", "질문", "동네정보", "양도·구해요", "불편해요"];
+  var residenceCache = {};
+  function getResidence(uid) {
+    if (!uid || !db) return Promise.resolve(null);
+    if (uid in residenceCache) return Promise.resolve(residenceCache[uid]);
+    return db.doc("residences/" + uid).get().then(function (s) {
+      residenceCache[uid] = s.exists ? s.data() : null; return residenceCache[uid];
+    }).catch(function () { return null; });
+  }
+  function bdBadge(badge) {
+    return badge ? '<span class="bd-badge">🏠 ' + esc(badge) + " 거주중</span>" : '<span class="bd-badge none">거주 미인증</span>';
+  }
+  function bdTime(iso) {
+    if (!iso) return "";
+    var t = new Date(iso).getTime(), d = (Date.now() - t) / 1000;
+    if (d < 60) return "방금";
+    if (d < 3600) return Math.floor(d / 60) + "분 전";
+    if (d < 86400) return Math.floor(d / 3600) + "시간 전";
+    if (d < 86400 * 7) return Math.floor(d / 86400) + "일 전";
+    return fmtDate(iso);
+  }
+  function bdHasPersonal(t) { return /01[016789][\s.-]?\d{3,4}[\s.-]?\d{4}/.test(t) || /\d{6}\s?-\s?[1-4]\d{6}/.test(t); }
+  function bdInc(cur, n) {
+    var FV = firebase.firestore && firebase.firestore.FieldValue;
+    return FV && FV.increment ? FV.increment(n) : Math.max(0, (Number(cur) || 0) + n);
+  }
+
+  function renderBoard(cat) {
+    cat = cat && BOARD_CATS.indexOf(cat) > -1 ? cat : "";
+    app.innerHTML =
+      '<div class="bd-wrap">' +
+        '<div class="bd-head">' +
+          '<div><h2>종합게시판</h2><p>월계1동 이웃끼리 익명으로 나누는 이야기</p></div>' +
+          '<a class="btn primary bd-write" href="#/board/write">✏️ 글쓰기</a>' +
+        "</div>" +
+        '<div class="bd-tabs">' + [""].concat(BOARD_CATS).map(function (c) {
+          return '<a href="#/board' + (c ? "/c/" + encodeURIComponent(c) : "") + '" class="bd-tab' + (c === cat ? " on" : "") + '">' + (c || "전체") + "</a>";
+        }).join("") + "</div>" +
+        '<div id="bd-me"></div>' +
+        '<div id="bd-hot"></div>' +
+        '<div id="bd-list" class="bd-list"><div class="empty">글을 불러오는 중…</div></div>' +
+      "</div>";
+    var meEl = document.getElementById("bd-me");
+    if (currentUser) {
+      getResidence(currentUser.uid).then(function (r) {
+        if (!document.body.contains(meEl)) return;
+        meEl.innerHTML = r
+          ? '<div class="bd-me ok">내 글에는 <b>익명 · ' + esc(r.name) + " 거주중</b>으로 표시돼요.</div>"
+          : '<div class="bd-me">🏠 집을 인증하면 글과 댓글에 <b>"OO빌라 거주중"</b> 배지가 붙어요. <a href="#/submit">제보에서 계약서 인증하기 →</a></div>';
+      });
+    }
+    if (!db) { document.getElementById("bd-list").innerHTML = '<div class="empty">지금은 게시판을 불러올 수 없어요.</div>'; return; }
+    var unsub = db.collection("posts").orderBy("createdAt", "desc").limit(200).onSnapshot(function (snap) {
+      var admin = isAdmin();
+      var all = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); })
+        .filter(function (p) { return !p.hidden || admin; });
+      var rows = cat ? all.filter(function (p) { return p.category === cat; }) : all;
+      var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      var hot = all.filter(function (p) { return (p.likeCount || 0) >= 3 && String(p.createdAt) >= weekAgo; })
+        .sort(function (a, b) { return (b.likeCount || 0) - (a.likeCount || 0); }).slice(0, 3);
+      var hotEl = document.getElementById("bd-hot"), listEl = document.getElementById("bd-list");
+      if (!listEl) return;
+      hotEl.innerHTML = !cat && hot.length ? '<div class="bd-hot"><div class="bd-hot-h">🔥 이번 주 인기글</div>' + hot.map(function (p) {
+        return '<a href="#/board/' + encodeURIComponent(p._id) + '"><span>' + esc(p.title) + '</span><em>👍 ' + (p.likeCount || 0) + "</em></a>";
+      }).join("") + "</div>" : "";
+      listEl.innerHTML = rows.length ? rows.map(bdItemHtml).join("") :
+        '<div class="empty">아직 글이 없어요.<div><a class="btn primary" href="#/board/write">첫 글 쓰기</a></div></div>';
+    }, function () {
+      var listEl = document.getElementById("bd-list");
+      if (listEl) listEl.innerHTML = '<div class="empty">게시판을 불러오지 못했어요. (관리자: Firestore 규칙에 posts 규칙이 게시됐는지 확인해주세요)</div>';
+    });
+    track(unsub);
+  }
+  function bdItemHtml(p) {
+    var prev = String(p.body || "").replace(/\s+/g, " ").slice(0, 120);
+    return (
+      '<a class="bd-item' + (p.hidden ? " is-hidden" : "") + '" href="#/board/' + encodeURIComponent(p._id) + '">' +
+        '<div class="bd-meta-top"><span class="bd-cat">' + esc(p.category || "자유") + "</span>" + bdBadge(p.badge) + "</div>" +
+        '<div class="bd-title">' + (p.hidden ? "🙈 " : "") + esc(p.title || "") + "</div>" +
+        (prev ? '<div class="bd-prev">' + esc(prev) + "</div>" : "") +
+        '<div class="bd-meta"><span>익명 · ' + esc(bdTime(p.createdAt)) + '</span><span class="bd-cnt">👍 ' + (p.likeCount || 0) + "　💬 " + (p.commentCount || 0) + "</span></div>" +
+      "</a>"
+    );
+  }
+
+  function renderBoardWrite() {
+    if (!currentUser) {
+      app.innerHTML = '<a class="back-link" href="#/board">← 게시판으로</a>' +
+        '<div class="empty" style="margin-top:20px"><p>글을 쓰려면 로그인이 필요해요.<br>글에는 이름 없이 <b>익명</b>으로만 표시돼요.</p>' +
+        '<div><button type="button" class="btn primary" id="bd-login">로그인</button></div></div>';
+      document.getElementById("bd-login").addEventListener("click", function () { openAuthModal("login"); });
+      return;
+    }
+    app.innerHTML =
+      '<a class="back-link" href="#/board">← 게시판으로</a>' +
+      '<div class="bd-wrap"><h2 style="margin:14px 0 4px;font-size:1.4rem">글쓰기</h2>' +
+      '<div class="bd-as" id="bd-as">표시 이름 확인 중…</div>' +
+      '<div class="bd-form">' +
+        '<div class="field"><label class="main">카테고리</label><select id="bd-cat">' + BOARD_CATS.map(function (c) { return "<option>" + esc(c) + "</option>"; }).join("") + "</select></div>" +
+        '<div class="field"><label class="main">제목</label><input type="text" id="bd-title" maxlength="80" placeholder="제목을 입력하세요"></div>' +
+        '<div class="field"><label class="main">내용</label><textarea id="bd-body" rows="10" maxlength="5000" placeholder="월계1동 생활, 집 구하기, 동네 정보 등 자유롭게 나눠주세요."></textarea></div>' +
+        '<div class="warn-box"><b>⚠️ 글 쓰기 전에</b><ul>' +
+          "<li>특정인을 비방하거나 확인되지 않은 사실을 퍼뜨리면 <b>명예훼손</b>이 될 수 있어요.</li>" +
+          "<li>이름·전화번호·호수 등 <b>개인을 알아볼 수 있는 정보</b>는 쓰지 마세요.</li>" +
+          "<li>신고된 글은 관리자가 확인 후 숨기거나 삭제할 수 있어요.</li></ul></div>" +
+        '<div class="submit-bar"><a class="btn" href="#/board">취소</a><button type="button" class="btn primary" id="bd-submit">등록</button></div>' +
+      "</div></div>";
+    var res = null, hideBadge = false;
+    getResidence(currentUser.uid).then(function (r) {
+      res = r;
+      var el = document.getElementById("bd-as"); if (!el) return;
+      function paintAs() {
+        el.innerHTML = "이 글은 <b>익명</b>" + (res && !hideBadge ? " · " + bdBadge(res.name) : "") + "(으)로 표시돼요." +
+          (res ? ' <label class="bd-hide"><input type="checkbox" id="bd-hidebadge"' + (hideBadge ? " checked" : "") + "> 거주 배지 숨기기</label>" : ' <a href="#/submit">집 인증하기 →</a>');
+        var cb = document.getElementById("bd-hidebadge");
+        if (cb) cb.addEventListener("change", function () { hideBadge = cb.checked; paintAs(); });
+      }
+      paintAs();
+    });
+    document.getElementById("bd-submit").addEventListener("click", function () {
+      var title = document.getElementById("bd-title").value.trim(), body = document.getElementById("bd-body").value.trim();
+      if (!title || !body) { toast("제목과 내용을 입력해주세요."); return; }
+      if (bdHasPersonal(title + " " + body)) { toast("전화번호·주민번호처럼 보이는 내용이 있어요. 지우고 다시 등록해주세요."); return; }
+      var btn = this; btn.disabled = true; btn.textContent = "등록 중…";
+      db.collection("posts").add({
+        title: title, body: body, category: document.getElementById("bd-cat").value,
+        authorUid: currentUser.uid,
+        badge: res && !hideBadge ? res.name : null,
+        likeCount: 0, commentCount: 0,
+        createdAt: new Date().toISOString()
+      }).then(function (ref) {
+        toast("글이 등록됐어요.");
+        location.hash = "#/board/" + encodeURIComponent(ref.id);
+      }).catch(function (e) { btn.disabled = false; btn.textContent = "등록"; toast(dbErrorMessage(e)); });
+    });
+  }
+
+  function renderBoardPost(id) {
+    app.innerHTML = '<a class="back-link" href="#/board">← 게시판으로</a><div class="bd-wrap" id="bd-post"><div class="empty">불러오는 중…</div></div>';
+    if (!db) return;
+    var post = null, comments = [], liked = false, res = null;
+    if (currentUser) getResidence(currentUser.uid).then(function (r) { res = r; });
+    function anonOf(uid) {
+      if (post && uid === post.authorUid) return "글쓴이";
+      var seen = [];
+      comments.forEach(function (c) { if (c.authorUid !== post.authorUid && seen.indexOf(c.authorUid) < 0) seen.push(c.authorUid); });
+      return "익명" + (seen.indexOf(uid) + 1);
+    }
+    function paint() {
+      var box = document.getElementById("bd-post"); if (!box) return;
+      if (!post) { box.innerHTML = '<div class="empty">글을 찾을 수 없어요.</div>'; return; }
+      var admin = isAdmin(), mine = currentUser && currentUser.uid === post.authorUid;
+      if (post.hidden && !admin) { box.innerHTML = '<div class="empty">신고 등으로 숨김 처리된 글이에요.</div>'; return; }
+      var draft = (document.getElementById("bd-cmt") || {}).value || "";
+      box.innerHTML =
+        '<article class="bd-article">' +
+          '<div class="bd-meta-top"><span class="bd-cat">' + esc(post.category || "자유") + "</span></div>" +
+          '<h2 class="bd-h">' + esc(post.title) + "</h2>" +
+          '<div class="bd-author"><span class="bd-av">' + (post.badge ? "🏠" : "👤") + "</span><div><b>익명</b> " + bdBadge(post.badge) + '<div class="bd-sub">' + esc(bdTime(post.createdAt)) + "</div></div></div>" +
+          '<div class="bd-body">' + esc(post.body).replace(/\n/g, "<br>") + "</div>" +
+          '<div class="bd-actions">' +
+            '<button type="button" class="bd-like' + (liked ? " on" : "") + '" id="bd-like">👍 좋아요 ' + (post.likeCount || 0) + "</button>" +
+            '<span class="bd-cnt">💬 댓글 ' + comments.length + "</span>" +
+            '<span class="bd-tools">' +
+              (mine || admin ? '<button type="button" id="bd-del">삭제</button>' : "") +
+              (admin ? '<button type="button" id="bd-hide">' + (post.hidden ? "숨김 해제" : "숨기기") + "</button>" : "") +
+              (!mine ? '<button type="button" id="bd-report">🚩 신고</button>' : "") +
+            "</span>" +
+          "</div>" +
+        "</article>" +
+        '<section class="bd-cmts">' +
+          comments.filter(function (c) { return !c.hidden || admin; }).map(function (c) {
+            var me = currentUser && c.authorUid === currentUser.uid;
+            return '<div class="bd-cmt' + (c.authorUid === post.authorUid ? " op" : "") + '">' +
+              '<div class="bd-cmt-h"><b>' + anonOf(c.authorUid) + "</b> " + bdBadge(c.badge) + '<span class="bd-sub">' + esc(bdTime(c.createdAt)) + "</span>" +
+              (me || admin ? '<button type="button" class="bd-cdel" data-cid="' + esc(c._id) + '">삭제</button>' : "") + "</div>" +
+              '<div class="bd-cmt-b">' + esc(c.body).replace(/\n/g, "<br>") + "</div></div>";
+          }).join("") +
+          (currentUser
+            ? '<div class="bd-cmt-form"><textarea id="bd-cmt" rows="2" maxlength="1000" placeholder="댓글을 남겨주세요 (익명)"></textarea><button type="button" class="btn primary" id="bd-cmt-send">등록</button></div>'
+            : '<div class="bd-cmt-form login"><button type="button" class="btn" id="bd-cmt-login">로그인하고 댓글 쓰기</button></div>') +
+        "</section>";
+      var ta = document.getElementById("bd-cmt"); if (ta) ta.value = draft;
+      bind();
+    }
+    function bind() {
+      var likeBtn = document.getElementById("bd-like");
+      likeBtn.addEventListener("click", function () {
+        if (!currentUser) { openAuthModal("login"); return; }
+        var ref = db.doc("posts/" + id + "/likes/" + currentUser.uid);
+        var was = liked; liked = !was; likeBtn.disabled = true;
+        (was ? ref.delete() : ref.set({ at: new Date().toISOString() })).then(function () {
+          return db.doc("posts/" + id).update({ likeCount: bdInc(post.likeCount, was ? -1 : 1) });
+        }).catch(function (e) { liked = was; toast(dbErrorMessage(e)); }).then(function () { likeBtn.disabled = false; paint(); });
+      });
+      var del = document.getElementById("bd-del");
+      if (del) del.addEventListener("click", function () {
+        if (!confirm("이 글을 삭제할까요? 되돌릴 수 없어요.")) return;
+        db.doc("posts/" + id).delete().then(function () { toast("삭제했어요."); location.hash = "#/board"; }).catch(function (e) { toast(dbErrorMessage(e)); });
+      });
+      var hide = document.getElementById("bd-hide");
+      if (hide) hide.addEventListener("click", function () {
+        db.doc("posts/" + id).update({ hidden: !post.hidden }).catch(function (e) { toast(dbErrorMessage(e)); });
+      });
+      var rep = document.getElementById("bd-report");
+      if (rep) rep.addEventListener("click", function () {
+        var why = prompt("신고 사유를 적어주세요 (예: 비방, 허위사실, 개인정보 노출)");
+        if (!why || !why.trim()) return;
+        db.collection("admin_messages").add({
+          type: "report", target: "게시글: " + post.title, postId: id, reason: why.trim(),
+          reporterUid: currentUser ? currentUser.uid : null, reporterEmail: currentUser ? currentUser.email : null,
+          status: "open", createdAt: new Date().toISOString()
+        }).then(function () { toast("신고가 접수됐어요. 확인 후 조치할게요."); }).catch(function (e) { toast(dbErrorMessage(e)); });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll(".bd-cdel"), function (b) {
+        b.addEventListener("click", function () {
+          if (!confirm("댓글을 삭제할까요?")) return;
+          db.doc("posts/" + id + "/comments/" + b.getAttribute("data-cid")).delete().then(function () {
+            return db.doc("posts/" + id).update({ commentCount: bdInc(post.commentCount, -1) });
+          }).catch(function (e) { toast(dbErrorMessage(e)); });
+        });
+      });
+      var send = document.getElementById("bd-cmt-send");
+      if (send) send.addEventListener("click", function () {
+        var t = document.getElementById("bd-cmt").value.trim();
+        if (!t) return;
+        if (bdHasPersonal(t)) { toast("전화번호·주민번호처럼 보이는 내용은 쓸 수 없어요."); return; }
+        send.disabled = true;
+        db.collection("posts/" + id + "/comments").add({
+          body: t, authorUid: currentUser.uid, badge: res ? res.name : null, createdAt: new Date().toISOString()
+        }).then(function () {
+          document.getElementById("bd-cmt").value = "";
+          return db.doc("posts/" + id).update({ commentCount: bdInc(post.commentCount, 1) }).catch(function () {});
+        }).catch(function (e) { toast(dbErrorMessage(e)); }).then(function () { var s = document.getElementById("bd-cmt-send"); if (s) s.disabled = false; });
+      });
+      var cl = document.getElementById("bd-cmt-login");
+      if (cl) cl.addEventListener("click", function () { openAuthModal("login"); });
+    }
+    track(db.doc("posts/" + id).onSnapshot(function (s) {
+      post = s.exists ? Object.assign({ _id: s.id }, s.data()) : null; paint();
+    }, function () { post = null; paint(); }));
+    track(db.collection("posts/" + id + "/comments").orderBy("createdAt", "asc").limit(500).onSnapshot(function (snap) {
+      comments = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); }); paint();
+    }, function () {}));
+    if (currentUser) db.doc("posts/" + id + "/likes/" + currentUser.uid).get().then(function (s) { liked = s.exists; paint(); }).catch(function () {});
+  }
+
+  // 홈 화면의 게시판 미리보기 카드
+  function mountBoardTeaser() {
+    var el = document.getElementById("bd-teaser");
+    if (!el || !db) return;
+    var unsub = db.collection("posts").orderBy("createdAt", "desc").limit(8).onSnapshot(function (snap) {
+      var rows = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); }).filter(function (p) { return !p.hidden; }).slice(0, 3);
+      el.innerHTML =
+        '<div class="bdt-h"><a href="#/board"><b>💬 종합게시판</b><span>이웃들의 익명 이야기</span></a><a class="bdt-go" href="#/board">전체보기 ›</a></div>' +
+        (rows.length ? rows.map(function (p) {
+          return '<a class="bdt-row" href="#/board/' + encodeURIComponent(p._id) + '"><span class="bd-cat">' + esc(p.category || "자유") + '</span><span class="bdt-t">' + esc(p.title) + '</span><em>💬 ' + (p.commentCount || 0) + "</em></a>";
+        }).join("") : '<a class="bdt-row empty-row" href="#/board/write">아직 글이 없어요. 첫 글을 남겨보세요 ✏️</a>');
+    }, function () {
+      el.innerHTML = '<div class="bdt-h"><a href="#/board"><b>💬 종합게시판</b><span>이웃들의 익명 이야기</span></a><a class="bdt-go" href="#/board">바로가기 ›</a></div>';
+    });
+    track(unsub);
   }
 
   // ---------------- 내 정보 수정 ----------------
@@ -4424,6 +4780,13 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var unsub = q.onSnapshot(function (snap) {
       if (snap.empty) { listEl.innerHTML = '<div class="empty">대기 중인 인증 요청이 없어요.</div>'; return; }
       listEl.innerHTML = snap.docs.map(adminCard).join("");
+      Array.prototype.forEach.call(listEl.querySelectorAll(".ct-img[data-file]"), function (box) {
+        firestore.doc("contract_files/" + box.getAttribute("data-file")).get().then(function (s) {
+          box.innerHTML = s.exists && s.data().image
+            ? '<img src="' + s.data().image + '" alt="계약서 사진" style="max-width:100%;border-radius:8px;margin-top:10px;border:1px solid var(--line)">'
+            : '<p class="hint">사진을 찾지 못했어요.</p>';
+        }).catch(function (e) { box.innerHTML = '<p class="hint">사진을 불러오지 못했어요: ' + esc(e.message || "") + "</p>"; });
+      });
       Array.prototype.forEach.call(listEl.querySelectorAll("[data-approve]"), function (b) {
         b.addEventListener("click", function () { reviewReport(b.getAttribute("data-path"), "verified"); });
       });
@@ -4447,7 +4810,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           (bits ? '<div style="margin-top:8px;font-size:0.86rem;color:var(--ink-muted)">' + esc(bits) + "</div>" : "") +
           (r.verification && r.verification.imageUrl
             ? '<img src="' + esc(r.verification.imageUrl) + '" alt="계약서 사진" style="max-width:100%;border-radius:8px;margin-top:10px;border:1px solid var(--line)">'
-            : '<p class="hint">첨부된 사진이 없어요.</p>') +
+            : r.verification && r.verification.fileId
+              ? '<div class="ct-img" data-file="' + esc(r.verification.fileId) + '"><p class="hint">계약서 사진 불러오는 중…</p></div>'
+              : '<p class="hint">첨부된 사진이 없어요.</p>') +
           '<div class="submit-bar" style="margin-top:12px">' +
             '<button type="button" class="btn" data-reject data-path="' + esc(path) + '">거부</button>' +
             '<button type="button" class="btn primary" data-approve data-path="' + esc(path) + '">승인</button>' +
@@ -4460,6 +4825,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         "verification.status": status,
         "verification.reviewedAt": new Date().toISOString(),
         "verification.reviewedBy": currentUser.email
+      }).then(function () {
+        if (status !== "verified") return;
+        // 승인 → 이 사람의 거주 인증(게시판 'OO 거주중' 배지)
+        var bid = path.split("/")[1];
+        return Promise.all([firestore.doc(path).get(), firestore.doc("buildings/" + bid).get()]).then(function (r) {
+          var rep = r[0].data() || {}, b = r[1].data() || {};
+          if (!rep.authorUid) return;
+          return firestore.doc("residences/" + rep.authorUid).set({ name: b.name || "월계1동", buildingId: bid, reportId: path.split("/")[3], verifiedAt: new Date().toISOString() });
+        });
       }).then(function () {
         toast(status === "verified" ? "승인했어요." : "거부했어요.");
       }).catch(function (e) { toast("처리 실패: " + (e.message || "")); });
