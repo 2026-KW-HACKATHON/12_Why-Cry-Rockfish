@@ -1234,7 +1234,7 @@ window.__WOLGYE_SEED__ = {
 }
 ;
 window.__KAKAO_JS_KEY__ = "f091231459fc09fea1afc73ccffb4f26"; // 카카오 개발자센터에서 발급받은 "JavaScript 키"를 따옴표 안에 붙여넣기 (도메인 등록 필요)
-window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인증 승인할 수 있는 구글 계정. 필요하면 여기에 이메일을 더 추가하세요.
+window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms0102345@naver.com"]; // 관리자로 인증 승인할 수 있는 구글 계정. 필요하면 여기에 이메일을 더 추가하세요.
 </script>
 
 <script>
@@ -4739,6 +4739,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com"]; // 관리자로 인�
     var task = authMode === "signup"
       ? auth.createUserWithEmailAndPassword(email, pw).then(function (cred) {
           var authUpdate = cred.user.updateProfile ? cred.user.updateProfile({ displayName: name }) : Promise.resolve();
+          if (cred.user.sendEmailVerification) cred.user.sendEmailVerification().catch(function () {});
           return authUpdate.then(function () {
             return db ? db.doc("users/" + cred.user.uid).set({ displayName: name }, { merge: true }).catch(function () {}) : null;
           });
