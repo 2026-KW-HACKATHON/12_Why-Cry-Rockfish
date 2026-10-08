@@ -285,6 +285,10 @@
   .bld-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
   .bld-chip i { font-style: normal; font-weight: 500; color: var(--ink-muted); }
   .bld-src { margin-top: 6px; font-size: 0.7rem; color: var(--ink-muted); }
+  .warn-box { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); border: 1px solid rgba(200,80,60,.25); font-size: 0.82rem; line-height: 1.55; color: var(--ink); }
+  .warn-box > b { color: var(--warn); }
+  .warn-box ul { margin: 6px 0 0; padding-left: 18px; }
+  .warn-box li { margin: 2px 0; }
   .info-tbl { margin-top: 14px; display: grid; grid-template-columns: 52px 1fr; column-gap: 18px; row-gap: 11px; font-size: 0.98rem; line-height: 1.45; }
   .info-tbl dt { color: var(--ink-muted); font-weight: 500; margin: 0; }
   .info-tbl dd { margin: 0; color: var(--ink); font-weight: 500; word-break: keep-all; overflow-wrap: anywhere; }
@@ -2258,15 +2262,13 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     ev.preventDefault(); ev.stopPropagation();
     adminRenameBuilding(t.getAttribute("data-edit-name"));
   }, true);
+  function addrKey(b) { return shortAddr(b) || String(b.name || ""); }
   function groupRows(rows) {
     var groups = {}, order = [];
     function add(k, b) { if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(b); }
     if (homeGroup === "type") {
-      rows.forEach(function (b) { add(isUnnamed(b) ? UNNAMED_GROUP : (ROOM_TYPES.indexOf(b.buildingType) > -1 ? b.buildingType : "기타"), b); });
-      order.sort(function (x, y) {
-        function rank(k) { return k === UNNAMED_GROUP ? 999 : ROOM_TYPES.indexOf(k); }
-        return rank(x) - rank(y);
-      });
+      rows.forEach(function (b) { add(ROOM_TYPES.indexOf(b.buildingType) > -1 ? b.buildingType : "기타", b); });
+      order.sort(function (x, y) { return ROOM_TYPES.indexOf(x) - ROOM_TYPES.indexOf(y); });
     } else if (homeGroup === "road") {
       rows.forEach(function (b) { add(roadOf(b), b); });
       order.sort(function (x, y) { return (x === "기타 주소") - (y === "기타 주소") || groups[y].length - groups[x].length; });
@@ -2283,7 +2285,13 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       order.sort(function (x) { return x === "후기가 있는 건물" ? -1 : 1; });
     }
     order.forEach(function (k) {
-      groups[k].sort(function (x, y) { return (y.lastReportAt || "").localeCompare(x.lastReportAt || "") || String(x.name || "").localeCompare(String(y.name || ""), "ko"); });
+      groups[k].sort(function (x, y) {
+        // 이름 있는 건물 먼저(최근 제보순 → 가나다), 이름 없는(주소만 있는) 건물은 뒤에 주소 순서대로
+        var ux = isUnnamed(x) ? 1 : 0, uy = isUnnamed(y) ? 1 : 0;
+        if (ux !== uy) return ux - uy;
+        if (ux) return addrKey(x).localeCompare(addrKey(y), "ko", { numeric: true });
+        return (y.lastReportAt || "").localeCompare(x.lastReportAt || "") || String(x.name || "").localeCompare(String(y.name || ""), "ko");
+      });
     });
     return order.map(function (k) { return { k: k, rows: groups[k] }; });
   }
@@ -2839,7 +2847,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var snapFirst = false, snapTimer = null;
     var q = db.collection("buildings").limit(2000);
     var unsub = q.onSnapshot(function (snap) {
-      homeCache = snap.docs.map(function (d) { return fixName(Object.assign({ id: d.id }, d.data())); });
+      homeCache = snap.docs.map(function (d) { return fixName(Object.assign({ id: d.id }, d.data())); })
+        .filter(function (b) { return !b.hidden || (isAdmin() && !b.mergedInto); });
       homeCache.sort(function (x, y) { return String(y.lastReportAt || "").localeCompare(String(x.lastReportAt || "")); });
       if (!snapFirst) { snapFirst = true; paint(); return; }
       clearTimeout(snapTimer); snapTimer = setTimeout(paint, 150);
@@ -3350,6 +3359,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
 
     var bUnsub = db.doc("buildings/" + id).onSnapshot(function (snap) {
       buildingData = snap.exists ? fixName(Object.assign({ _id: id }, snap.data())) : null;
+      if (buildingData && buildingData.mergedInto && !isAdmin()) { location.replace("#/building/" + encodeURIComponent(buildingData.mergedInto)); return; }
       paint();
     }, function () { buildingData = null; paint(); });
     track(bUnsub);
@@ -3524,6 +3534,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
             '<div class="lp-row"><select id="lp-from" aria-label="입주 연도">' + lpYearOptions("입주 연도") + '</select>' +
             '<span class="lp-sep">~</span><select id="lp-to" aria-label="퇴거 연도">' + lpYearOptions("퇴거 연도", true) + '</select></div>' +
             '<input type="hidden" id="livedPeriod"></div>' +
+          '<div class="warn-box"><b>⚠️ 후기 작성 전 꼭 읽어주세요</b>' +
+            '<ul><li>직접 겪은 일을 <b>사실 그대로</b> 적어주세요. 확인되지 않은 소문·추측은 쓰지 마세요.</li>' +
+            '<li>욕설·인신공격·비방 목적의 글은 <b>명예훼손</b>이 될 수 있고, 사실이어도 처벌될 수 있어요.</li>' +
+            '<li>집주인·이웃의 <b>이름, 전화번호, 호수 등 개인을 알아볼 수 있는 정보</b>는 적지 마세요.</li>' +
+            '<li>허위·비방 제보는 신고 시 숨김 또는 삭제되며, 작성 내용의 책임은 작성자에게 있어요.</li></ul></div>' +
           '<div class="field"><label class="main">거주 후기 (선택)</label><textarea id="note" rows="5" placeholder="살면서 좋았던 점, 아쉬웠던 점, 계약 전에 알았으면 좋았을 것들을 자유롭게 적어주세요.&#10;예: 채광은 좋은데 겨울엔 외풍이 있어서 난방비가 꽤 나왔어요. 집주인분은 수리 요청에 빨리 응해주셨어요."></textarea></div>' +
         "</fieldset>" +
 
@@ -3890,6 +3905,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       }
       if (!roomType || !priceOk) {
         document.getElementById("err-rent").style.display = "";
+        return;
+      }
+      var noteTxt = val("note");
+      if (/01[016789][\s.-]?\d{3,4}[\s.-]?\d{4}/.test(noteTxt) || /\d{6}\s?-\s?[1-4]\d{6}/.test(noteTxt)) {
+        toast("후기에 전화번호·주민번호처럼 보이는 내용이 있어요. 개인정보는 지우고 다시 등록해주세요.");
+        document.getElementById("note").focus();
         return;
       }
       if (!(Number(val("rating")) > 0)) {
