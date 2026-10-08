@@ -194,6 +194,14 @@
   .hero-tabs { display: flex; gap: 6px; }
   .hero-tabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--ink-muted); }
   .hero-tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .hv-photos { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; height: 100%; background: #111; }
+  .hv-photos img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: contain; scroll-snap-align: center; cursor: zoom-in; }
+  .hv-count { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.55); color: #fff; font-size: .72rem; padding: 2px 8px; border-radius: 999px; pointer-events: none; }
+  .mk-pinwrap { transform: translate(-50%, -100%); text-align: center; pointer-events: none; }
+  .mk-pinlabel { display: inline-block; background: #7c5cc4; color: #fff; font-size: .78rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; box-shadow: 0 1px 6px rgba(0,0,0,.4); white-space: nowrap; max-width: 60vw; overflow: hidden; text-overflow: ellipsis; }
+  .mk-pinwrap::after { content: ""; display: block; width: 0; height: 0; margin: 0 auto; border: 6px solid transparent; border-top-color: #7c5cc4; }
+  .ph-prev { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .ph-prev img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
   .hero-cap { font-size: 0.74rem; color: var(--ink-muted); margin-top: 6px; }
 
   .empty {
@@ -2901,62 +2909,88 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     // ---- 건물 사진: 카카오 로드뷰(실제 거리 사진) / 스카이뷰(위성 사진) ----
     // 화면이 다시 그려져도 로드뷰를 새로 만들지 않도록 한 번 만든 영역을 재사용
     var heroNode = null, heroKey = "";
+    function heroPhotos() {
+      var out = [];
+      (isAdmin() ? reports : reports.filter(function (r) { return !r.hidden; })).forEach(function (r) {
+        (r.photoUrls || []).forEach(function (u) { if (u && out.indexOf(u) < 0) out.push(u); });
+      });
+      return out.slice(0, 12);
+    }
     function mountHero() {
       var slot = document.getElementById("b-hero-slot");
       if (!slot) return;
       var ll = buildingLatLng(buildingData);
-      var key = buildingData._id + "|" + (ll ? ll.join(",") : "");
+      var photos = heroPhotos();
+      var key = buildingData._id + "|" + (ll ? ll.join(",") : "") + "|" + photos.join(",");
       if (heroNode && heroKey === key) { slot.replaceWith(heroNode); return; }
       heroKey = key;
       heroNode = document.createElement("div");
       heroNode.className = "b-hero-wrap";
-      heroNode.innerHTML = '<div class="b-hero" id="b-hero">' + buildingMedia(buildingData) + "</div>";
+      heroNode.innerHTML = '<div class="b-hero" id="b-hero">' + (photos.length ? '<img src="' + esc(photos[0]) + '" alt="' + esc(buildingData.name) + ' 제보 사진">' : buildingMedia(buildingData)) + "</div>";
       slot.replaceWith(heroNode);
-      if (!ll || !hasKakaoKey()) return;
-      loadKakao().then(function (kakao) {
-        var K = kakao.maps, pos = new K.LatLng(ll[0], ll[1]);
-        var myNode = heroNode;
-        new K.RoadviewClient().getNearestPanoId(pos, 60, function (panoId) {
-          if (myNode !== heroNode) return;
-          myNode.innerHTML =
-            '<div class="hero-tabs">' +
-              (panoId ? '<button type="button" data-hv="rv" class="active">📷 거리 사진</button>' : "") +
-              '<button type="button" data-hv="sky"' + (panoId ? "" : ' class="active"') + '>🛰 위성 사진</button>' +
-            "</div>" +
-            '<div class="b-hero hero-live"><div class="hv" id="hv-rv"' + (panoId ? "" : ' style="display:none"') + '></div><div class="hv" id="hv-sky"' + (panoId ? ' style="display:none"' : "") + "></div></div>" +
-            '<div class="hero-cap">' + (panoId ? "카카오 로드뷰 · 드래그해서 둘러볼 수 있어요. 촬영 시점에 따라 지금과 다를 수 있어요." : "이 건물 근처는 로드뷰가 없어 위성 사진으로 보여드려요.") + "</div>";
-          var rvEl = myNode.querySelector("#hv-rv"), skyEl = myNode.querySelector("#hv-sky");
-          var rv = null, sky = null;
-          function showRv() {
-            if (rv) { rv.relayout(); return; }
-            rv = new K.Roadview(rvEl);
-            rv.setPanoId(panoId, pos);
-            K.event.addListener(rv, "init", function () {
-              // 카메라가 건물 쪽을 바라보도록 방향 맞추기
-              var from = rv.getPosition();
-              var y1 = from.getLat() * Math.PI / 180, y2 = ll[0] * Math.PI / 180, dl = (ll[1] - from.getLng()) * Math.PI / 180;
-              var brg = Math.atan2(Math.sin(dl) * Math.cos(y2), Math.cos(y1) * Math.sin(y2) - Math.sin(y1) * Math.cos(y2) * Math.cos(dl)) * 180 / Math.PI;
-              rv.setViewpoint(new K.Viewpoint((brg + 360) % 360, 5, 0));
-            });
-          }
-          function showSky() {
-            if (sky) { sky.relayout(); sky.setCenter(pos); return; }
-            sky = new K.Map(skyEl, { center: pos, level: 2, mapTypeId: K.MapTypeId.HYBRID });
-            sky.setZoomable(false);
-            new K.CustomOverlay({ map: sky, position: pos, content: '<div class="mk-dot"></div>', xAnchor: 0, yAnchor: 0 });
-          }
-          if (panoId) showRv(); else showSky();
-          Array.prototype.forEach.call(myNode.querySelectorAll("[data-hv]"), function (b) {
-            b.addEventListener("click", function () {
-              var v = b.getAttribute("data-hv");
-              Array.prototype.forEach.call(myNode.querySelectorAll("[data-hv]"), function (x) { x.classList.toggle("active", x === b); });
-              rvEl.style.display = v === "rv" ? "" : "none";
-              skyEl.style.display = v === "sky" ? "" : "none";
-              if (v === "rv") showRv(); else showSky();
-            });
+      var myNode = heroNode;
+      var canK = !!ll && hasKakaoKey();
+      function build(panoId, K) {
+        if (myNode !== heroNode) return;
+        var first = photos.length ? "ph" : panoId ? "rv" : "sky";
+        var tabs = [];
+        if (photos.length) tabs.push(["ph", "📸 제보 사진 " + photos.length]);
+        if (panoId) tabs.push(["rv", "📷 거리 사진"]);
+        if (canK) tabs.push(["sky", "🛰 위성 사진"]);
+        if (!tabs.length) return;
+        function pane(id, on) { return '<div class="hv" id="hv-' + id + '"' + (on ? "" : ' style="display:none"') + "></div>"; }
+        myNode.innerHTML =
+          '<div class="hero-tabs">' + tabs.map(function (t) { return '<button type="button" data-hv="' + t[0] + '"' + (t[0] === first ? ' class="active"' : "") + ">" + t[1] + "</button>"; }).join("") + "</div>" +
+          '<div class="b-hero hero-live">' + pane("ph", first === "ph") + pane("rv", first === "rv") + pane("sky", first === "sky") + "</div>" +
+          '<div class="hero-cap" id="hero-cap"></div>';
+        var els = { ph: myNode.querySelector("#hv-ph"), rv: myNode.querySelector("#hv-rv"), sky: myNode.querySelector("#hv-sky") };
+        var cap = myNode.querySelector("#hero-cap");
+        var caps = {
+          ph: "이 건물에 제보한 분들이 직접 올린 사진이에요. 옆으로 넘겨서 볼 수 있어요.",
+          rv: "카카오 로드뷰 · 드래그해서 둘러볼 수 있어요. 가까운 다른 건물과 같은 사진일 수 있고, 촬영 시점에 따라 지금과 다를 수 있어요.",
+          sky: "보라색 원 안이 이 건물 위치예요. 좌표가 몇 m 어긋날 수 있어서, 이웃한 건물과 헷갈리면 제보 사진을 참고하세요."
+        };
+        var rv = null, sky = null;
+        if (photos.length) {
+          els.ph.innerHTML = '<div class="hv-photos">' + photos.map(function (u) { return '<img src="' + esc(u) + '" loading="lazy" alt="제보 사진" data-full="' + esc(u) + '">'; }).join("") + "</div>" + (photos.length > 1 ? '<span class="hv-count">옆으로 넘기기 ›</span>' : "");
+          Array.prototype.forEach.call(els.ph.querySelectorAll("img"), function (im) { im.addEventListener("click", function () { window.open(im.getAttribute("data-full"), "_blank", "noopener"); }); });
+        }
+        function showRv() {
+          if (rv) { rv.relayout(); return; }
+          rv = new K.Roadview(els.rv);
+          rv.setPanoId(panoId, new K.LatLng(ll[0], ll[1]));
+          K.event.addListener(rv, "init", function () {
+            var from = rv.getPosition();
+            var y1 = from.getLat() * Math.PI / 180, y2 = ll[0] * Math.PI / 180, dl = (ll[1] - from.getLng()) * Math.PI / 180;
+            var brg = Math.atan2(Math.sin(dl) * Math.cos(y2), Math.cos(y1) * Math.sin(y2) - Math.sin(y1) * Math.cos(y2) * Math.cos(dl)) * 180 / Math.PI;
+            rv.setViewpoint(new K.Viewpoint((brg + 360) % 360, 5, 0));
           });
+        }
+        function showSky() {
+          var pos = new K.LatLng(ll[0], ll[1]);
+          if (sky) { sky.relayout(); sky.setCenter(pos); return; }
+          sky = new K.Map(els.sky, { center: pos, level: 1, mapTypeId: K.MapTypeId.HYBRID });
+          sky.setZoomable(false);
+          new K.Circle({ map: sky, center: pos, radius: 10, strokeWeight: 3, strokeColor: "#7c5cc4", strokeOpacity: 0.95, fillColor: "#7c5cc4", fillOpacity: 0.12 });
+          new K.CustomOverlay({ map: sky, position: pos, content: '<div class="mk-pinwrap"><span class="mk-pinlabel">' + esc(buildingData.name || "이 건물") + "</span></div>", xAnchor: 0, yAnchor: 0, zIndex: 3 });
+        }
+        function show(v) {
+          Array.prototype.forEach.call(myNode.querySelectorAll("[data-hv]"), function (x) { x.classList.toggle("active", x.getAttribute("data-hv") === v); });
+          ["ph", "rv", "sky"].forEach(function (k) { els[k].style.display = k === v ? "" : "none"; });
+          cap.textContent = caps[v];
+          if (v === "rv" && panoId) showRv();
+          if (v === "sky" && K) showSky();
+        }
+        Array.prototype.forEach.call(myNode.querySelectorAll("[data-hv]"), function (b) {
+          b.addEventListener("click", function () { show(b.getAttribute("data-hv")); });
         });
-      }).catch(function () {});
+        show(first);
+      }
+      if (!canK) { if (photos.length) build(null, null); return; }
+      loadKakao().then(function (kakao) {
+        var K = kakao.maps;
+        new K.RoadviewClient().getNearestPanoId(new K.LatLng(ll[0], ll[1]), 40, function (panoId) { build(panoId, K); });
+      }).catch(function () { if (photos.length) build(null, null); });
     }
 
     // ---- 위치 지정 (좌표가 없는 건물) ----
@@ -3445,6 +3479,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         "</fieldset>" +
 
         '<fieldset>' +
+          '<legend>건물 사진 (선택)</legend>' +
+          '<div class="field"><label class="main">건물 외관·내부 사진 (최대 3장)</label>' +
+            '<input type="file" id="photoFile" accept="image/*" multiple>' +
+            '<div class="ph-prev" id="ph-prev"></div>' +
+            '<p class="hint">이 건물을 다른 건물과 구분하는 데 쓰여요. 얼굴·번호판·택배 송장·호수 명패가 찍히지 않게 주의해주세요. 올린 사진은 이 건물 페이지에 공개돼요.</p>' +
+          "</div>" +
+        "</fieldset>" +
+
+        '<fieldset>' +
           '<legend>신뢰도 정보 (선택)</legend>' +
           '<div class="field"><label class="main">지금 이 집에 사시나요?</label><select id="residencyStatus">' + options(RESIDENCY_STATUS, "선택 안 함") + "</select></div>" +
           '<p style="margin:8px 0 0;font-size:0.8rem;color:var(--ink-muted)">아직 거주 중인 제보는 다음 세입자를 구하려는 목적이 섞여 있을 수 있어요. 이미 퇴거하신 분의 제보라면 밝혀주시면 다른 사람이 더 믿을 수 있어요.</p>' +
@@ -3746,6 +3789,16 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       }).catch(function () {});
     }
 
+    (function () {
+      var pf = document.getElementById("photoFile"), pv = document.getElementById("ph-prev");
+      if (!pf || !pv) return;
+      pf.addEventListener("change", function () {
+        pv.innerHTML = "";
+        var fs = Array.prototype.slice.call(pf.files || [], 0, 3);
+        if ((pf.files || []).length > 3) toast("사진은 최대 3장까지 올라가요. 앞의 3장만 사용해요.");
+        fs.forEach(function (f) { var im = document.createElement("img"); im.src = URL.createObjectURL(f); pv.appendChild(im); });
+      });
+    })();
     document.getElementById("f").addEventListener("submit", function (ev) {
       ev.preventDefault();
       submitReport();
@@ -3851,6 +3904,36 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       if (!currentUser) { toast("로그인이 필요해요."); btn.disabled = false; btn.textContent = editCtx ? "수정 완료" : "제보 등록하기"; return; }
 
       var contractFile = (document.getElementById("contractFile").files || [])[0] || null;
+      var photoFiles = Array.prototype.slice.call((document.getElementById("photoFile") || {}).files || [], 0, 3);
+      // 사진을 줄여서(긴 변 1280px, JPEG) 올린 뒤 제보에 주소를 붙인다. 실패해도 제보 자체는 유지.
+      function shrink(file) {
+        return new Promise(function (res) {
+          try {
+            var url = URL.createObjectURL(file), im = new Image();
+            im.onload = function () {
+              var sc = Math.min(1, 1280 / Math.max(im.width, im.height)), c = document.createElement("canvas");
+              c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+              c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+              URL.revokeObjectURL(url);
+              c.toBlob(function (bl) { res(bl || file); }, "image/jpeg", 0.82);
+            };
+            im.onerror = function () { URL.revokeObjectURL(url); res(file); };
+            im.src = url;
+          } catch (e) { res(file); }
+        });
+      }
+      function uploadPhotos(bid, rid, base) {
+        if (!photoFiles.length) return Promise.resolve();
+        return Promise.all(photoFiles.map(function (f, i) {
+          return shrink(f).then(function (bl) {
+            return storage.ref().child("buildingPhotos/" + bid + "/" + rid + "_" + i + "_" + Date.now() + ".jpg").put(bl, { contentType: "image/jpeg" });
+          }).then(function (snap) { return snap.ref.getDownloadURL(); }).catch(function () { return null; });
+        })).then(function (urls) {
+          urls = (base || []).concat(urls.filter(Boolean));
+          if (urls.length === (base || []).length) return;
+          return db.doc("buildings/" + bid + "/reports/" + rid).update({ photoUrls: urls }).catch(function () {});
+        });
+      }
 
       if (editCtx) {
         reportData.authorUid = editCtx.data.authorUid;
@@ -3872,6 +3955,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         }
         editChain.then(function () {
           return editReportRef.update(reportData);
+        }).then(function () {
+          return uploadPhotos(editCtx.buildingId, editCtx.reportId, editCtx.data.photoUrls || []);
         }).then(function () {
           toast("제보가 수정됐어요." + (contractFile ? " 계약서는 다시 검토 후 인증돼요." : ""));
           location.hash = "#/building/" + encodeURIComponent(editCtx.buildingId);
@@ -3929,6 +4014,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
               // 업로드 실패해도 제보 자체는 이미 저장됐으니 조용히 넘어감(계약서 인증만 못 붙음)
             });
           }
+          chain = chain.then(function () { return uploadPhotos(buildingId, reportRef.id, []); });
           return chain.then(function () {
             return db.doc("buildings/" + buildingId).update({
               lastReportAt: reportData.createdAt,
