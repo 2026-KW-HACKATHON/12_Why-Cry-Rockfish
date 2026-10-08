@@ -3688,6 +3688,26 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       }).open({ q: "월계동 " });
     });
 
+    function distMeters(a, b) {
+      var R = 6371000, r = Math.PI / 180;
+      var dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r;
+      var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return 2 * R * Math.asin(Math.sqrt(x));
+    }
+    // 가까운(35m 이내) 기존 건물, 또는 같은 도로명주소/같은 이름의 건물을 찾는다. 이름 없는 건물을 우선한다.
+    function nearestExisting(ll, road, name) {
+      var best = null, nn = String(name || "").replace(/\s+/g, ""), rn = String(road || "").replace(/\s+/g, "");
+      allBuildings.forEach(function (b) {
+        var d = (ll && b.lat != null && b.lng != null) ? distMeters(ll, [b.lat, b.lng]) : 1e9;
+        var sameAddr = rn && String(b.roadAddress || b.address || "").replace(/\s+/g, "").indexOf(rn) === 0;
+        var sameName = nn && !isUnnamed(b) && String(b.name || "").replace(/\s+/g, "") === nn;
+        if (d > 35 && !sameAddr && !sameName) return;
+        var score = (sameAddr || sameName ? 0 : d) - (isUnnamed(b) ? 15 : 0);
+        if (!best || score < best.score) best = { b: b, d: d > 1e8 ? 0 : d, score: score };
+      });
+      return best;
+    }
+
     function checkAddrDuplicate(addr) {
       addrDupHint.style.display = "none";
       addrDupHint.innerHTML = "";
@@ -3866,6 +3886,17 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       reportData.authorEmail = currentUser.email;
       reportData.verification = null;
 
+      // 새 건물로 등록하려는 위치(또는 같은 주소) 가까이에 이미 등록된 건물이 있으면 그 건물에 합친다
+      if (mode === "new") {
+        var near = nearestExisting(nbLatLng, newAddrBase, newName);
+        if (near) {
+          var nm = (near.b.name || "이름 없는 건물");
+          if (window.confirm("지금 고른 위치 근처(약 " + Math.round(near.d) + "m)에 이미 등록된 건물이 있어요:\n\n" + nm + (near.b.address ? "\n" + near.b.address : "") + "\n\n이 건물에 제보를 추가할까요?\n(확인 = 이 건물에 합치기 / 취소 = 새 건물로 따로 등록)")) {
+            picked = near.b;
+            mode = "existing";
+          }
+        }
+      }
       var buildingPromise;
       if (mode === "existing") {
         buildingPromise = Promise.resolve(picked.id);
