@@ -1173,6 +1173,11 @@
     .bd-tabs { margin-left: -2px; margin-right: -2px; }
   }
   #fee-box { margin-top: 14px; }
+  .lock-btns { display: flex; gap: 8px; flex-wrap: wrap; flex: none; }
+  .lock-banner .cr-n { color: var(--accent-strong); }
+  .credit-note { margin: 10px 0; padding: 10px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-size: 0.84rem; line-height: 1.5; }
+  .credit-note a { color: var(--accent-strong); font-weight: 700; }
+  @media (max-width: 600px) { .lock-btns { width: 100%; } .lock-btns .btn { flex: 1; text-align: center; } }
 </style>
 </head>
 <body>
@@ -2290,6 +2295,74 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   function hasContributed() {
     return !!(currentUser && contributedCache);
   }
+  // ---- 무료 열람 크레딧: 제보 전에는 건물 3곳까지 상세 정보를 열어볼 수 있음 (계정당) ----
+  var FREE_CREDITS = 3;
+  var creditState = null, creditUnsub = null;
+  function creditsLeft() { return creditState ? Math.max(0, Number(creditState.credits) || 0) : 0; }
+  function creditUnlocked(bid) { return !!(currentUser && creditState && (creditState.unlocked || []).indexOf(bid) > -1); }
+  function watchCredits(uid) {
+    if (creditUnsub) { try { creditUnsub(); } catch (e) {} creditUnsub = null; }
+    creditState = null;
+    if (!uid || !db) { updateUnlockBadge(); return; }
+    var first = true;
+    creditUnsub = db.doc("credits/" + uid).onSnapshot(function (snap) {
+      if (!snap.exists) {
+        db.doc("credits/" + uid).set({ credits: FREE_CREDITS, unlocked: [], createdAt: new Date().toISOString() }).catch(function () {});
+        return;
+      }
+      var before = JSON.stringify(creditState);
+      creditState = snap.data();
+      updateUnlockBadge();
+      // 상세 화면을 보고 있으면 잠금 상태를 다시 그림 (스크롤 위치 유지)
+      if (before !== JSON.stringify(creditState) && /^#\/building\//.test(location.hash) && !hasContributed()) {
+        var y = window.scrollY; router(); setTimeout(function () { window.scrollTo(0, y); }, 60);
+      }
+      first = false;
+    }, function () { updateUnlockBadge(); });
+  }
+  function useCredit(bid) {
+    if (!currentUser) { openAuthModal("login"); return; }
+    if (hasContributed() || creditUnlocked(bid)) return;
+    var left = creditsLeft();
+    if (left <= 0) { toast("무료 열람 크레딧을 모두 사용했어요. 제보 1건이면 모든 건물이 열려요."); return; }
+    var next = (creditState.unlocked || []).concat([bid]);
+    db.doc("credits/" + currentUser.uid).update({ credits: left - 1, unlocked: next, updatedAt: new Date().toISOString() })
+      .then(function () {
+        toast("🎟 크레딧 1개를 사용했어요. 남은 크레딧 " + (left - 1) + "개" + (left - 1 === 0 ? " · 이제 제보하면 모든 건물이 열려요." : ""));
+      })
+      .catch(function (e) { toast(dbErrorMessage(e)); });
+  }
+  document.addEventListener("click", function (ev) {
+    var t = ev.target && ev.target.closest && ev.target.closest("[data-use-credit]");
+    if (!t) return;
+    ev.preventDefault();
+    useCredit(t.getAttribute("data-use-credit"));
+  });
+  // 잠긴 건물 안내: 로그인 전 / 크레딧 남음 / 크레딧 소진에 따라 다르게
+  function creditLockHtml(bid, title) {
+    var go = '<a class="btn" href="#/submit/' + encodeURIComponent(bid) + '">제보하고 전체 열기</a>';
+    var body, btn;
+    if (!currentUser) {
+      body = "<b>" + title + "</b><br>로그인하면 <b>무료 열람 크레딧 " + FREE_CREDITS + "개</b>로 건물 " + FREE_CREDITS + "곳을 먼저 볼 수 있어요. 제보 1건이면 모든 건물이 열려요.";
+      btn = '<button type="button" class="btn primary" data-login-credit>로그인하고 무료로 보기</button>';
+    } else if (!creditState) {
+      body = "<b>" + title + "</b><br>무료 열람 크레딧을 확인하는 중이에요…";
+      btn = "";
+    } else if (creditsLeft() > 0) {
+      body = "<b>" + title + "</b><br>아직 제보 전이라 <b>무료 열람 크레딧</b>을 쓸 수 있어요. 남은 크레딧 <b class=\"cr-n\">" + creditsLeft() + "개</b> · 제보 1건이면 모든 건물이 무제한으로 열려요.";
+      btn = '<button type="button" class="btn primary" data-use-credit="' + esc(bid) + '">🎟 크레딧 1개로 이 건물 보기</button>';
+    } else {
+      body = "<b>무료 열람 크레딧을 모두 사용했어요.</b><br>제보 1건만 남기면 이 건물뿐 아니라 모든 건물의 상세 정보를 볼 수 있어요.";
+      btn = "";
+    }
+    return '<div class="lock-banner ov-lock"><div class="lock-banner-icon">' + (currentUser && creditsLeft() > 0 ? "🎟" : "🔒") + '</div>' +
+      '<div class="lock-banner-text">' + body + '</div><div class="lock-btns">' + btn + go + "</div></div>";
+  }
+  document.addEventListener("click", function (ev) {
+    var t = ev.target && ev.target.closest && ev.target.closest("[data-login-credit]");
+    if (!t) return;
+    ev.preventDefault(); openAuthModal("login");
+  });
   function markContributed() {
     if (!currentUser || !db) return;
     contributedCache = true;
@@ -2297,7 +2370,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     db.doc("users/" + currentUser.uid).set({ contributed: true }, { merge: true }).catch(function () {});
   }
   function updateUnlockBadge() {
-    if (unlockBadgeEl) unlockBadgeEl.hidden = !hasContributed();
+    if (!unlockBadgeEl) return;
+    if (hasContributed()) { unlockBadgeEl.textContent = "🔓 상세 열람 가능"; unlockBadgeEl.hidden = false; }
+    else if (currentUser && creditState) { unlockBadgeEl.textContent = "🎟 무료 열람 " + creditsLeft() + "회"; unlockBadgeEl.hidden = false; }
+    else unlockBadgeEl.hidden = true;
   }
   function watchContributedState(uid) {
     if (contributedUnsub) { try { contributedUnsub(); } catch (e) {} contributedUnsub = null; }
@@ -2623,7 +2699,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
             "</div>" +
           "</div>" +
           (hasContributed() ? "" :
-            '<div class="banner hs-banner">🔒 난방비·채광·소음 같은 상세 정보는 제보 1건을 남기면 모든 건물에서 볼 수 있어요. ' +
+            '<div class="banner hs-banner">🎟 가입하면 <b>무료 열람 크레딧 3개</b>로 건물 3곳의 상세 정보를 볼 수 있고, 제보 1건이면 모든 건물이 열려요. ' +
             '<a href="#/submit" style="color:var(--accent-strong);font-weight:700">지금 제보하기 →</a></div>') +
           '<div id="list" class="hl-list"></div>' +
           '<div id="map-wrap" class="map-wrap" style="display:none">' +
@@ -3198,7 +3274,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var shown = reports.filter(function (r) { return !r.hidden; });
       var listRows = adminMode ? reports : shown;
       var stats = summarize(shown);
-      var unlocked = hasContributed();
+      var byCredit = !hasContributed() && creditUnlocked(buildingData._id);
+      var unlocked = hasContributed() || byCredit;
       body.innerHTML =
         '<div id="b-hero-slot"></div>' +
         '<div class="b-head">' +
@@ -3228,9 +3305,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
                 return '<span class="chip ' + t.cls + '">' + esc(t.label) + "</span>";
               }).join("") + "</div>" : "") +
             "</section>"
-          : '<div class="lock-banner ov-lock"><div class="lock-banner-icon">🔒</div>' +
-              '<div class="lock-banner-text"><b>이 건물 한눈에 보기는 제보한 분께만 열려요.</b><br>제보 1건이면 이 건물뿐 아니라 모든 건물의 상세 정보를 볼 수 있어요.</div>' +
-              '<a class="btn primary" href="#/submit/' + encodeURIComponent(buildingData._id) + '">제보하고 열기</a></div>') +
+          : creditLockHtml(buildingData._id, "이 건물 한눈에 보기는 잠겨 있어요.")) +
 
         (adminMode ? adminBuildingBar() : "") +
         (buildingLatLng(buildingData)
@@ -3255,6 +3330,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<a class="btn" href="#/submit/' + encodeURIComponent(buildingData._id) + '">이 건물에 제보하기</a>' +
         "</span></div>" +
         (!unlocked && !adminMode && listRows.length ? lockBanner(buildingData._id) : "") +
+        (byCredit && !adminMode ? '<div class="credit-note">🎟 크레딧으로 연 건물이에요 · 남은 크레딧 <b>' + creditsLeft() + '개</b> · <a href="#/submit/' + encodeURIComponent(buildingData._id) + '">제보하면 모든 건물이 무제한으로 열려요 →</a></div>' : "") +
         '<div class="r-list">' +
           (listRows.length ? listRows.map(function (r) { return reportCard(r, unlocked || adminMode); }).join("") : '<div class="empty">아직 이 건물에 대한 제보가 없어요.</div>') +
         "</div>";
@@ -3432,14 +3508,8 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     track(function () { if (detailMap) { try { detailMap.destroy(); } catch (e) {} detailMap = null; } });
 
     function lockBanner(buildingId) {
-      return (
-        '<div class="lock-banner">' +
-          '<div class="lock-banner-icon">🔒</div>' +
-          '<div class="lock-banner-text"><b>제보 1건이면 모든 상세 정보가 열려요.</b><br>' +
-          '난방비 체감·채광·소음·특이사항 같은 자세한 기록은 이곳에 제보를 남긴 분에게만 보여드려요. 어떤 방이든 짧게 남겨도 충분해요.</div>' +
-          '<a class="btn primary" href="#/submit/' + encodeURIComponent(buildingId) + '">제보하고 전체 보기</a>' +
-        "</div>"
-      );
+      // 위쪽 '한눈에 보기' 잠금 안내에 버튼이 이미 있으므로 여기서는 짧게만
+      return '<div class="credit-note">🔒 아래 제보의 자세한 내용도 같이 잠겨 있어요. 위에서 ' + (currentUser && creditsLeft() > 0 ? "크레딧을 쓰거나 " : "") + '<a href="#/submit/' + encodeURIComponent(buildingId) + '">제보하면</a> 열려요.</div>';
     }
 
     function reportCard(r, unlocked) {
@@ -5739,6 +5809,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     currentUser = user;
     updateAuthUI();
     watchContributedState(user ? user.uid : null);
+    watchCredits(user ? user.uid : null);
     router();
   });
 })();
