@@ -285,6 +285,11 @@
   .bld-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.76rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
   .bld-chip i { font-style: normal; font-weight: 500; color: var(--ink-muted); }
   .bld-src { margin-top: 6px; font-size: 0.7rem; color: var(--ink-muted); }
+  .fee-inc { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; font-size: 0.9rem; }
+  .fee-inc input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .fee-inc span { flex-basis: 100%; padding-left: 26px; font-size: 0.76rem; color: var(--ink-muted); }
+  .fee-box { transition: opacity .25s ease; }
+  .fee-box.off { opacity: .28; pointer-events: none; filter: grayscale(1); }
   .warn-box { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); border: 1px solid rgba(200,80,60,.25); font-size: 0.82rem; line-height: 1.55; color: var(--ink); }
   .warn-box > b { color: var(--warn); }
   .warn-box ul { margin: 6px 0 0; padding-left: 18px; }
@@ -2304,6 +2309,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var rs = rtLatest(b.rt || b.rtRoad);
     return rs.jeon && rs.jeon.a != null ? Number(rs.jeon.a) : null;
   }
+  var PF_AMT = [0, 3000, 5000, 7000, 10000, 13000, 16000, 20000, 25000, 30000, 40000, 50000, 70000, 100000, 150000, 200000];
+  function saleOf(b) {
+    if (b.lastReportAt && b.lastDealType === "매매" && b.lastSaleAmount != null) return Number(b.lastSaleAmount);
+    var rs = rtLatest(b.rt || b.rtRoad);
+    return rs.sale && rs.sale.a != null ? Number(rs.sale.a) : null;
+  }
   function hasSale(b) { return (b.lastReportAt && b.lastDealType === "매매") || !!rtLatest(b.rt || b.rtRoad).sale; }
   // 월세 기준 가격: 거주자 제보(월세) → 이 건물 실거래 → 같은 길 실거래
   function monthlyOf(b) {
@@ -2356,10 +2367,10 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<div class="pf" id="pf">' +
             '<div class="pf-sec"><div class="pf-h">거래유형 <small>중복선택 가능</small></div>' +
               '<div class="pf-chips" id="pf-deal"><button type="button" class="pf-chip on" data-deal="">전체</button><button type="button" class="pf-chip" data-deal="월세">월세</button><button type="button" class="pf-chip" data-deal="전세">전세</button><button type="button" class="pf-chip" data-deal="매매">매매</button></div></div>' +
-            '<div class="pf-sec"><div class="pf-h">보증금 <small>월세 보증금 · 전세금</small></div>' +
+            '<div class="pf-sec"><div class="pf-h" id="pf-dh">보증금 <small>월세 보증금 · 전세금</small></div>' +
               '<div class="pf-slider" id="pf-dr"><span class="pf-bubble" id="pf-dv">전체</span><div class="pf-range"><input type="range" id="pf-dmin" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="0" aria-label="보증금 최소"><input type="range" id="pf-dmax" min="0" max="' + (PF_DEP.length - 1) + '" step="1" value="' + (PF_DEP.length - 1) + '" aria-label="보증금 최대"></div>' +
-              '<div class="pf-ticks"><span style="left:0">최소</span><span style="left:' + pfPos(PF_DEP, 5000) + '%">5천만</span><span style="left:' + pfPos(PF_DEP, 20000) + '%">2억</span><span style="left:100%">최대</span></div></div></div>' +
-            '<div class="pf-sec"><div class="pf-h">월세</div>' +
+              '<div class="pf-ticks" id="pf-dticks"></div></div></div>' +
+            '<div class="pf-sec" id="pf-rsec"><div class="pf-h">월세</div>' +
               '<div class="pf-slider" id="pf-rr"><span class="pf-bubble" id="pf-rv">전체</span><div class="pf-range"><input type="range" id="pf-rmin" min="0" max="' + (PF_RENT.length - 1) + '" step="1" value="0" aria-label="월세 최소"><input type="range" id="pf-rmax" min="0" max="' + (PF_RENT.length - 1) + '" step="1" value="' + (PF_RENT.length - 1) + '" aria-label="월세 최대"></div>' +
               '<div class="pf-ticks"><span style="left:0">최소</span><span style="left:' + pfPos(PF_RENT, 50) + '%">50만</span><span style="left:' + pfPos(PF_RENT, 100) + '%">100만</span><span style="left:100%">최대</span></div></div></div>' +
             '<div class="pf-foot"><span id="pf-note">조건에 맞는 집만 목록과 지도에 보여요.</span><button type="button" class="pf-reset" id="pf-reset">↺ 초기화</button></div>' +
@@ -2774,18 +2785,42 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var pfDeals = [];
     function idx(id) { var e = document.getElementById(id); return e ? Number(e.value) : 0; }
     function fmtMan(n) { if (n >= 10000) { var e = Math.round(n / 1000) / 10; return e + "억"; } return n >= 1000 && n % 1000 === 0 ? (n / 1000) + "천만" : n.toLocaleString("ko-KR") + "만"; }
+    // 전세·매매만 고르면 보증금/월세 대신 '금액' 하나로 거른다
+    function amtMode() { return pfDeals.length > 0 && pfDeals.indexOf("월세") < 0; }
+    function depArr() { return amtMode() ? PF_AMT : PF_DEP; }
+    var pfAmtWas = false;
+    function applyPfMode() {
+      var m = amtMode(), arr = depArr();
+      var mn = document.getElementById("pf-dmin"), mx = document.getElementById("pf-dmax");
+      if (m !== pfAmtWas || Number(mx.max) !== arr.length - 1) {
+        mn.max = mx.max = arr.length - 1; mn.value = 0; mx.value = arr.length - 1;
+        if (m) { document.getElementById("pf-rmin").value = 0; document.getElementById("pf-rmax").value = PF_RENT.length - 1; }
+        pfAmtWas = m;
+      }
+      var only = pfDeals.length === 1 ? pfDeals[0] : "";
+      document.getElementById("pf-dh").innerHTML = m ? (only === "매매" ? "매매가" : only === "전세" ? "전세금" : "금액") + " <small>" + (only ? "금액 하나로 봐요" : "전세금 · 매매가") + "</small>" : "보증금 <small>월세 보증금 · 전세금</small>";
+      document.getElementById("pf-rsec").style.display = m ? "none" : "";
+      var t = m ? [[10000, "1억"], [50000, "5억"]] : [[5000, "5천만"], [20000, "2억"]];
+      document.getElementById("pf-dticks").innerHTML = '<span style="left:0">최소</span>' + t.map(function (x) { return '<span style="left:' + pfPos(arr, x[0]) + '%">' + x[1] + "</span>"; }).join("") + '<span style="left:100%">최대</span>';
+    }
     function readPf() {
+      var DA = depArr();
       var a = idx("pf-dmin"), b = idx("pf-dmax"), c = idx("pf-rmin"), d = idx("pf-rmax");
       if (a > b) { var t1 = a; a = b; b = t1; }
       if (c > d) { var t2 = c; c = d; d = t2; }
-      var dTop = b >= PF_DEP.length - 1, rTop = d >= PF_RENT.length - 1;
-      var p = { deals: pfDeals.slice(), dmin: PF_DEP[a], dmax: dTop ? Infinity : PF_DEP[b], rmin: PF_RENT[c], rmax: rTop ? Infinity : PF_RENT[d], ia: a, ib: b, ic: c, id: d };
-      p.depOn = a > 0 || !dTop; p.rentOn = c > 0 || !rTop;
+      var dTop = b >= DA.length - 1, rTop = d >= PF_RENT.length - 1;
+      var p = { deals: pfDeals.slice(), amt: amtMode(), dmin: DA[a], dmax: dTop ? Infinity : DA[b], rmin: PF_RENT[c], rmax: rTop ? Infinity : PF_RENT[d], ia: a, ib: b, ic: c, id: d };
+      p.depOn = a > 0 || !dTop; p.rentOn = !p.amt && (c > 0 || !rTop);
       p.on = p.depOn || p.rentOn || p.deals.length > 0;
       return p;
     }
     function pfMatch(b, p) {
       if (!p.on) return true;
+      if (p.amt) {
+        if (p.deals.indexOf("전세") > -1) { var jj = jeonseOf(b); if (jj != null && jj >= p.dmin && jj <= p.dmax) return true; }
+        if (p.deals.indexOf("매매") > -1) { var ss = saleOf(b); if (ss != null && ss >= p.dmin && ss <= p.dmax) return true; }
+        return false;
+      }
       var want = p.deals.length ? p.deals : ["월세", "전세", "매매"];
       if (want.indexOf("월세") > -1) {
         var m = monthlyOf(b);
@@ -2808,20 +2843,20 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         return fmtMan(arr[iLo]) + " ~ " + fmtMan(arr[iHi]);
       }
       var dv = document.getElementById("pf-dv"), rv = document.getElementById("pf-rv");
-      dv.textContent = lab(p.dmin, p.dmax, PF_DEP, p.ia, p.ib);
+      dv.textContent = lab(p.dmin, p.dmax, depArr(), p.ia, p.ib);
       rv.textContent = lab(p.rmin, p.rmax, PF_RENT, p.ic, p.id);
       function setBar(id, lo, hi, n) {
         var el = document.getElementById(id), A = lo / (n - 1) * 100, B = hi / (n - 1) * 100;
         el.style.setProperty("--a", A + "%"); el.style.setProperty("--b", B + "%"); el.style.setProperty("--mf", String((A + B) / 200));
       }
-      setBar("pf-dr", p.ia, p.ib, PF_DEP.length); setBar("pf-rr", p.ic, p.id, PF_RENT.length);
+      setBar("pf-dr", p.ia, p.ib, depArr().length); setBar("pf-rr", p.ic, p.id, PF_RENT.length);
       dv.classList.toggle("on", p.depOn); rv.classList.toggle("on", p.rentOn);
       Array.prototype.forEach.call(document.querySelectorAll("#pf-deal .pf-chip"), function (c) {
         var k = c.getAttribute("data-deal");
         c.classList.toggle("on", k ? pfDeals.indexOf(k) > -1 : !pfDeals.length);
       });
       document.getElementById("pf").classList.toggle("on", p.on);
-      document.getElementById("pf-note").textContent = p.rentOn ? "월세 조건을 걸면 월세 정보가 있는 집만 보여요." : p.on ? "조건에 맞는 가격(제보·실거래) 정보가 있는 집만 보여요." : "조건에 맞는 집만 목록과 지도에 보여요.";
+      document.getElementById("pf-note").textContent = p.amt ? "전세·매매는 보증금·월세 없이 금액 하나로 비교해요." : p.rentOn ? "월세 조건을 걸면 월세 정보가 있는 집만 보여요." : p.on ? "조건에 맞는 가격(제보·실거래) 정보가 있는 집만 보여요." : "조건에 맞는 집만 목록과 지도에 보여요.";
     }
     var pfTimer = null;
     ["pf-dmin", "pf-dmax", "pf-rmin", "pf-rmax"].forEach(function (id) {
@@ -2832,14 +2867,15 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var k = c.getAttribute("data-deal");
       if (!k) pfDeals = [];
       else { var i = pfDeals.indexOf(k); if (i > -1) pfDeals.splice(i, 1); else pfDeals.push(k); if (pfDeals.length === 3) pfDeals = []; }
-      syncPfUi(); paint();
+      applyPfMode(); syncPfUi(); paint();
     });
     document.getElementById("pf-reset").addEventListener("click", function () {
+      pfDeals = []; applyPfMode();
       document.getElementById("pf-dmin").value = 0; document.getElementById("pf-dmax").value = PF_DEP.length - 1;
       document.getElementById("pf-rmin").value = 0; document.getElementById("pf-rmax").value = PF_RENT.length - 1;
-      pfDeals = []; syncPfUi(); paint();
+      syncPfUi(); paint();
     });
-    syncPfUi();
+    applyPfMode(); syncPfUi();
     qInput.addEventListener("input", paint);
     typeSel.addEventListener("change", paint);
 
@@ -3210,7 +3246,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           (typeof r.rating === "number" && r.rating > 0 ? '<div class="r-rating">' + starsHtml(r.rating) + "<b>" + fmtRating(r.rating) + "</b></div>" : "") +
           '<div class="r-grid">' +
             priceLine +
-            '<span class="k">관리비</span><span class="v">' + fmtWon(r.maintenanceFee) + "</span>" +
+            '<span class="k">관리비</span><span class="v">' + (r.feeIncluded ? "월세에 포함" : fmtWon(r.maintenanceFee)) + "</span>" +
           "</div>" +
           detailBlock +
           adminBar +
@@ -3483,11 +3519,14 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           "</div>" +
           '<div id="price-jeonse" class="field" style="display:none"><label class="main">전세금 (만원) *</label><input type="number" id="jeonseAmount" min="0" placeholder="예: 8000"></div>' +
           '<div id="price-sale" class="field" style="display:none"><label class="main">매매가 (만원) *</label><input type="number" id="saleAmount" min="0" placeholder="예: 25000"></div>' +
+          '<label class="fee-inc" id="fee-inc-row"><input type="checkbox" id="feeIncluded"> <b>관리비 포함 월세</b><span>월세에 관리비가 이미 들어 있어요 (따로 안 내요)</span></label>' +
+          '<div class="fee-box" id="fee-box">' +
           '<div class="field"><label class="main">관리비 (만원, 대략)</label><input type="number" id="fee" min="0" placeholder="예: 7"></div>' +
           '<div class="field"><label class="main">관리비 포함 항목</label>' +
             '<div class="check-grid">' + INCLUDE_ITEMS.map(function (v) {
               return '<label><input type="checkbox" name="inc" value="' + esc(v) + '"> ' + esc(v) + "</label>";
             }).join("") + "</div>" +
+          "</div>" +
           "</div>" +
           '<div class="field-error" id="err-rent" style="display:none">방 유형과, 거래 유형에 맞는 가격 정보를 꼭 입력해주세요.</div>' +
         "</fieldset>" +
@@ -3622,11 +3661,20 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var priceMonthly = document.getElementById("price-monthly");
     var priceJeonse = document.getElementById("price-jeonse");
     var priceSale = document.getElementById("price-sale");
+    var feeIncCb = document.getElementById("feeIncluded"), feeBox = document.getElementById("fee-box");
+    function syncFeeInc() {
+      var on = feeIncCb.checked && dealTypeSel.value === "월세";
+      feeBox.classList.toggle("off", on);
+      Array.prototype.forEach.call(feeBox.querySelectorAll("input"), function (i) { i.disabled = on; });
+    }
+    feeIncCb.addEventListener("change", syncFeeInc);
     function updatePriceFields() {
       var d = dealTypeSel.value;
       priceMonthly.style.display = d === "월세" ? "" : "none";
       priceJeonse.style.display = d === "전세" ? "" : "none";
       priceSale.style.display = d === "매매" ? "" : "none";
+      document.getElementById("fee-inc-row").style.display = d === "월세" ? "" : "none";
+      syncFeeInc();
     }
     dealTypeSel.addEventListener("change", updatePriceFields);
     var ratingInput = document.getElementById("rating");
@@ -3656,6 +3704,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         if (ed.jeonseAmount !== null && ed.jeonseAmount !== undefined) setVal("jeonseAmount", ed.jeonseAmount);
         if (ed.saleAmount !== null && ed.saleAmount !== undefined) setVal("saleAmount", ed.saleAmount);
         if (ed.maintenanceFee !== null && ed.maintenanceFee !== undefined) setVal("fee", ed.maintenanceFee);
+        if (ed.feeIncluded) { document.getElementById("feeIncluded").checked = true; }
         var incSet = ed.maintenanceIncludes || [];
         Array.prototype.forEach.call(document.querySelectorAll('input[name="inc"]'), function (cb) {
           if (incSet.indexOf(cb.value) > -1) cb.checked = true;
@@ -3942,6 +3991,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var btn = document.getElementById("submitBtn");
       btn.disabled = true; btn.textContent = editCtx ? "수정 중..." : "등록 중...";
 
+      var feeIncOn = dealType === "월세" && document.getElementById("feeIncluded").checked;
       var incs = Array.prototype.map.call(document.querySelectorAll('input[name="inc"]:checked'), function (i) { return i.value; });
       var reportData = {
         dealType: dealType,
@@ -3954,8 +4004,9 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         rent: rent,
         jeonseAmount: jeonseAmount,
         saleAmount: saleAmount,
-        maintenanceFee: numOrNull("fee"),
-        maintenanceIncludes: incs,
+        maintenanceFee: feeIncOn ? null : numOrNull("fee"),
+        maintenanceIncludes: feeIncOn ? [] : incs,
+        feeIncluded: feeIncOn,
         heatingType: val("heatingType") || "모르겠음",
         heatingFeel: val("heatingFeel") || "모르겠음",
         heatingCostNote: val("heatingCostNote").trim(),
@@ -4199,7 +4250,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
             '<div style="font-size:0.82rem;color:var(--ink-muted)">' + esc(b.address || "") + (extra.length ? " · " + extra.join(" · ") : "") + "</div>" +
             '<div class="r-grid" style="margin-top:10px">' +
               '<span class="k">' + myPriceText(r)[0] + '</span><span class="v">' + esc(myPriceText(r)[1]) + "</span>" +
-              '<span class="k">관리비</span><span class="v">' + fmtWon(r.maintenanceFee) + "</span>" +
+              '<span class="k">관리비</span><span class="v">' + (r.feeIncluded ? "월세에 포함" : fmtWon(r.maintenanceFee)) + "</span>" +
               '<span class="k">난방비 체감</span><span class="v">' + esc(r.heatingFeel || "-") + "</span>" +
             "</div>" +
             (r.note ? '<div class="r-note">' + esc(r.note) + "</div>" : "") +
