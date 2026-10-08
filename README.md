@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/33211779/README.md)
+[README.md](https://github.com/user-attachments/files/33213222/README.md)
 # 집속사정 (Why-Cry-Rockfish)
 
 > 계약 전에, 먼저 살아본 사람에게 물어보세요.
@@ -18,6 +18,7 @@
 - **건물 탐색**: 월계1동 건물 약 490곳을 목록·카카오 지도로 제공, 띄어쓰기 무시 검색, 거래유형·보증금·월세 필터, 광운대역·광운대까지 도보 시간 표시
 - **건물 상세**: 국토부 최근 실거래가, 건축물대장 요약(준공연도·층수·면적), 거주자 평가 육각형 그래프, 로드뷰·위성사진·제보 사진
 - **실거주 후기 제보**: 가격·관리비·난방·채광·곰팡이·소음·별점·사진 입력, 제보 1건으로 전체 상세 정보 열람 (기여 기반 열람 구조), 같은 위치 중복 건물 자동 감지
+- **무료 열람 크레딧**: 제보 전 가입자에게 건물 3곳을 먼저 볼 수 있는 크레딧 3개 제공, 사용할 때마다 남은 개수 안내 (제보 1건 이후 무제한)
 - **계약서 인증**: 임대차계약서 사진 제출 → 관리자 검토 → "OO빌라 거주중" 배지 부여, **검토 즉시 계약서 사진 삭제**
 - **익명 종합게시판**: 블라인드 방식 익명 커뮤니티 (글쓴이·익명1·익명2 표시), 거주 인증자만 전체 게시판 이용, 미인증자는 자유게시판만 이용
 - **우럭 AI 챗봇**: 건물 데이터를 바탕으로 집 추천·질문 응답 (Firebase AI Logic, Gemini)
@@ -72,11 +73,11 @@ icons/                 앱 아이콘
 - **백엔드 플랫폼**: [Firebase](https://firebase.google.com/) (Google) — Authentication, Cloud Firestore, AI Logic(Gemini)
 - **폰트**: Black Han Sans, Gowun Batang ([Google Fonts](https://fonts.google.com/), SIL Open Font License), [Pretendard](https://github.com/orioncactus/pretendard) (SIL Open Font License)
 - **건물 기본 사진**: [PhilopaterHany/Luxestate-Template](https://github.com/PhilopaterHany/Luxestate-Template) (ISC License) — `dist/images/` 내 건물 외관 이미지 일부를 사진이 없는 건물의 기본 이미지로 사용
-- **홈 화면 광운대학교 사진**: [출처 기입 필요]
+- **홈 화면 광운대학교 사진**: 네이버 사진
 
 ## 팀
 
 | 이름 | 역할 |
 |---|---|
-| 배석원 | [구현, 데이터, 베포] |
-| 강민서 | [기획, 프론트] |
+| 배석원 | 구현, 데이터, 배포 |
+| 강민서 | 기획, 프론트엔드 |
