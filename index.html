@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -809,7 +809,6 @@
   .hs-hero.map-on .hs-photo { opacity: 0; transform: scale(1.04); }
   .hs-hero.map-on .hs-mapbox { opacity: 1; pointer-events: auto; }
   .hs-map-btn { position: absolute; left: clamp(24px, 6vw, 88px); bottom: clamp(32px, 8vh, 84px); display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--dash); background: rgba(255,255,255,.72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--ink); animation: floaty 5s ease-in-out infinite; font-weight: 800; font-size: 1.05rem; padding: 14px 24px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.18); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, opacity .35s ease; }
-  @media (min-width: 761px) { .hs-map-btn { bottom: 104px; } }
   .hs-map-btn svg { width: 22px; height: 22px; color: var(--accent); }
   @keyframes floaty { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
   .hs-map-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(0,0,0,.24); }
@@ -1096,6 +1095,10 @@
   .pf-ticks span { top: 6px; }
   .pf-foot { margin-top: 4px; font-size: 0.7rem; }
   .pf-reset { padding: 3px 10px; }
+  /* PC: 지도로 보기 버튼을 사진 가운데 맨 아래로 */
+  @media (min-width: 761px) { .hs-map-btn { left: 50%; transform: translateX(-50%); bottom: 28px; } .hs-map-btn:hover { transform: translateX(-50%) translateY(-2px); } .hs-hero.map-on .hs-map-btn { transform: translateX(-50%) translateY(8px); } }
+  #q::placeholder { font-size: 0.86rem; }
+  .sky-thumb .sat2x { position: absolute; left: 0; top: 0; width: 200%; height: 200%; transform: scale(.5); transform-origin: 0 0; }
 </style>
 </head>
 <body>
@@ -1949,21 +1952,20 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     return tryAt(0);
   }
   // ---- 목록 썸네일: 그 건물 위치를 찍은 카카오 위성사진(스카이뷰). 화면에 보일 때만 불러옴 ----
+  // 목록 썸네일 = 그 건물 위치의 카카오 위성사진(스카이뷰) 정지 이미지. 한 번 받은 이미지는 주소를 기억해 다시 그릴 때 바로 사용
   function skyThumbHtml(b) {
     var ll = buildingLatLng(b);
     if (!ll || !hasKakaoKey()) return "";
     return '<div class="sky-thumb" data-lat="' + ll[0] + '" data-lng="' + ll[1] + '"></div>';
   }
-  // 로드뷰 썸네일: 화면에 보이는 카드에만 작은 로드뷰를 띄우고(건물 쪽을 바라보게), 화면에서 멀어지면 내려서
-  // 브라우저 부담(동시에 띄우는 개수)을 줄임. 근처에 로드뷰가 없으면 위성사진으로 대신 보여줌
-  var thumbObserver = null, panoCache = {}, thumbQ = [], thumbBusy = false;
+  var thumbObserver = null, thumbQ = [], thumbBusy = false;
   function thumbPump() {
     if (thumbBusy) return;
     var fn = thumbQ.shift();
     if (!fn) return;
     thumbBusy = true;
     try { fn(); } catch (e) {}
-    setTimeout(function () { thumbBusy = false; thumbPump(); }, 90);
+    setTimeout(function () { thumbBusy = false; thumbPump(); }, 40);
   }
   function bearingDeg(fromLat, fromLng, toLat, toLng) {
     var y1 = fromLat * Math.PI / 180, y2 = toLat * Math.PI / 180, dl = (toLng - fromLng) * Math.PI / 180;
@@ -1971,63 +1973,45 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     return (b + 360) % 360;
   }
   function hydrateSkyThumbs(root) {
-    var els = (root || document).querySelectorAll(".sky-thumb:not([data-obs])");
+    var els = (root || document).querySelectorAll(".sky-thumb:not([data-obs]):not([data-live])");
     if (!els.length) return;
     loadKakao().then(function (kakao) {
       var K = kakao.maps;
-      function unload(el) {
-        el.removeAttribute("data-q");
-        if (!el.getAttribute("data-live")) return;
-        el.removeAttribute("data-live");
-        el.classList.remove("on");
-        el.innerHTML = "";
-      }
       function draw(el) {
         if (el.getAttribute("data-live") || el.getAttribute("data-q")) return;
         el.setAttribute("data-q", "1");
         thumbQ.push(function () {
           el.removeAttribute("data-q");
-          if (!document.body.contains(el)) return;
+          if (!document.body.contains(el) || el.getAttribute("data-live")) return;
           var r = el.getBoundingClientRect();
-          if (r.bottom < -400 || r.top > window.innerHeight + 400) return;
+          if (r.bottom < -300 || r.top > window.innerHeight + 300) return;
           drawNow(el);
         });
         thumbPump();
       }
       function drawNow(el) {
-        if (el.getAttribute("data-live")) return;
         el.setAttribute("data-live", "1");
         var lat = Number(el.getAttribute("data-lat")), lng = Number(el.getAttribute("data-lng"));
-        var pos = new K.LatLng(lat, lng), key = lat.toFixed(6) + "," + lng.toFixed(6);
-        function withPano(panoId) {
-          if (!el.getAttribute("data-live")) return;
-          try {
-            if (panoId) {
-              var rv = new K.Roadview(el);
-              rv.setPanoId(panoId, pos);
-              K.event.addListener(rv, "init", function () {
-                var from = rv.getPosition();
-                rv.setViewpoint(new K.Viewpoint(bearingDeg(from.getLat(), from.getLng(), lat, lng), 3, -1));
-                el.classList.add("on");
-              });
-              el.classList.add("rv");
-            } else {
-              new K.StaticMap(el, { center: pos, level: 2, mapTypeId: K.MapTypeId.SKYVIEW });
-              el.classList.add("sky");
-              setTimeout(function () { el.classList.add("on"); }, 400);
-            }
-          } catch (e) { unload(el); }
-        }
-        if (key in panoCache) withPano(panoCache[key]);
-        else new K.RoadviewClient().getNearestPanoId(pos, 50, function (panoId) { panoCache[key] = panoId || null; withPano(panoId); });
+        try {
+          // 레티나 화면에서도 선명하게: 2배 크기로 받아서 절반으로 줄여 표시
+          el.innerHTML = '<div class="sat2x"></div>';
+          new K.StaticMap(el.firstChild, { center: new K.LatLng(lat, lng), level: 1, mapTypeId: K.MapTypeId.SKYVIEW });
+          var tries = 0;
+          (function ready() {
+            var im = el.querySelector("img");
+            if (im && (im.complete || tries > 25)) { el.classList.add("on"); return; }
+            if (im && !im.__w) { im.__w = 1; im.addEventListener("load", function () { el.classList.add("on"); }); }
+            if (++tries < 40) setTimeout(ready, 80); else el.classList.add("on");
+          })();
+        } catch (e) { el.removeAttribute("data-live"); }
       }
       if (!("IntersectionObserver" in window)) { Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); draw(el); }); return; }
       if (!thumbObserver) thumbObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
-          if (!document.body.contains(en.target)) { thumbObserver.unobserve(en.target); return; }
-          if (en.isIntersecting) draw(en.target); else unload(en.target);
+          if (!document.body.contains(en.target) || en.target.getAttribute("data-live")) { thumbObserver.unobserve(en.target); return; }
+          if (en.isIntersecting) draw(en.target);
         });
-      }, { rootMargin: "150px 0px" });
+      }, { rootMargin: "200px 0px" });
       Array.prototype.forEach.call(els, function (el) { el.setAttribute("data-obs", "1"); thumbObserver.observe(el); });
     }).catch(function () {});
   }
@@ -2464,7 +2448,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var est = !has ? rtEstPrice(b) : "";
     return (
       '<a class="hl-row' + (id === homeSelectedId ? " sel" : "") + '" data-id="' + esc(id) + '" href="#/building/' + encodeURIComponent(id) + '" style="--i:' + Math.min(i, 18) + '">' +
-        '<span class="hl-thumb">' + staticThumbHtml(b) + "</span>" +
+        '<span class="hl-thumb">' + staticThumbHtml(b) + skyThumbHtml(b) + "</span>" +
         '<span class="hl-main">' +
           '<span class="hl-name"><i class="hl-dot' + (has ? " on" : "") + '"></i>' + esc(b.name || "이름 없는 건물") + walkTagHtml(b, true) + (isAdmin() ? '<button type="button" class="hl-edit" data-edit-name="' + esc(id) + '" title="건물 이름 수정">✏️ 이름</button>' : "") + "</span>" +
           '<span class="hl-sub">' + esc(shortAddr(b) || "주소 미상") + " · " + esc(b.buildingType || "기타") + "</span>" +
@@ -2500,7 +2484,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
             '<div class="hs-count" id="hs-count">건물 불러오는 중…</div>' +
           "</div>" +
           '<div class="search-row hs-search">' +
-            '<input type="text" id="q" placeholder="건물명 또는 주소로 검색">' +
+            '<input type="text" id="q" placeholder="건물명·주소로 검색 (예: EXITO빌라, 광운로 14길)">' +
             '<select id="ftype">' + options(ROOM_TYPES, "전체 유형") + "</select>" +
           "</div>" +
           '<div class="pf" id="pf">' +
@@ -3622,7 +3606,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<div id="mode-existing-panel">' +
             '<div id="picked-box"></div>' +
             '<div class="search-pick">' +
-              '<input type="text" id="b-search" style="width:100%" placeholder="건물명 또는 주소로 검색 (예: 빌라, 광운로)">' +
+              '<input type="text" id="b-search" style="width:100%" placeholder="건물명 또는 주소로 검색 (예: EXITO빌라, 광운로 14길)">' +
               '<div class="pick-results" id="pick-results" style="display:none"></div>' +
             "</div>" +
             '<div class="map-hint" style="margin-top:10px">또는 지도에서 건물 점을 눌러 고르세요. 보라색 선 안쪽이 월계1동이에요.</div>' +
