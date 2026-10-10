@@ -238,6 +238,11 @@
   .b-head { margin-top: 14px; }
   .b-head .addr { color: var(--ink-muted); margin-top: 6px; font-size: 0.94rem; }
   .b-head h2 { font-size: 1.7rem; }
+  .b-head.has-map { display: flex; gap: 12px; align-items: stretch; }
+  .b-head.has-map .b-head-txt { flex: 1 1 0; min-width: 0; }
+  .b-head-map { flex: 0 0 38%; max-width: 280px; height: 170px !important; align-self: flex-start; margin: 0; }
+  .b-head.has-map .walk-tag { white-space: normal; }
+  @media (max-width: 520px) { .b-head-map { flex-basis: 36%; height: 150px !important; } .b-head.has-map h2 { font-size: 1.4rem; } }
   .stat-row {
     margin-top: 20px;
     display: grid;
@@ -1002,7 +1007,7 @@
   .map-box { width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); position: relative; z-index: 0; }
   #home-map { height: min(62vh, 520px); }
   #nb-map { height: 230px; margin-top: 8px; }
-  #detail-map { height: 200px; margin-top: 14px; }
+  #detail-map { height: auto; margin-top: 0; }
   .map-hint { font-size: 0.8rem; color: var(--ink-muted); margin-top: 8px; }
   .map-panel-h { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 8px; }
   .map-panel-h h3 { font-size: 1rem; }
@@ -3323,10 +3328,13 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var unlocked = hasContributed() || byCredit;
       body.innerHTML =
         '<div id="b-hero-slot"></div>' +
-        '<div class="b-head">' +
+        '<div class="b-head' + (buildingLatLng(buildingData) ? " has-map" : "") + '">' +
+          '<div class="b-head-txt">' +
           '<span class="tag">' + esc(buildingData.buildingType || "기타") + "</span>" +
           "<h2>" + esc(buildingData.name) + walkTagHtml(buildingData, false) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
           bldSummaryHtml(buildingData) +
+          "</div>" +
+          (buildingLatLng(buildingData) ? '<div id="detail-map" class="map-box b-head-map"></div>' : "") +
         "</div>" +
         rtCardHtml(buildingData) +
         ((unlocked || adminMode)
@@ -3354,8 +3362,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
 
         (adminMode ? adminBuildingBar() : "") +
         (buildingLatLng(buildingData)
-          ? '<div id="detail-map" class="map-box"></div>' +
-            (isAdmin() ? '<div style="text-align:right;margin-top:6px"><button type="button" class="btn ghost" id="loc-set-open" style="font-size:0.8rem">📍 위치 수정</button></div>' : "")
+          ? (isAdmin() ? '<div style="text-align:right;margin-top:6px"><button type="button" class="btn ghost" id="loc-set-open" style="font-size:0.8rem">📍 위치 수정</button></div>' : "")
           : '<div class="banner" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
               "<span>📍 이 건물은 아직 지도 위치가 없어요.</span>" +
               (currentUser
@@ -3540,7 +3547,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var elD = document.getElementById("detail-map");
       if (!ll || !elD) return;
       var mobile = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-      createWMap(elD, { center: ll, zoom: 16, zoomControl: true, draggable: !mobile, zoomable: !mobile }).then(function (m) {
+      createWMap(elD, { center: ll, zoom: 16, zoomControl: false, draggable: !mobile, zoomable: !mobile }).then(function (m) {
         if (!document.body.contains(elD)) { m.destroy(); return; }
         detailMap = m;
         m.setView(ll, 16);
