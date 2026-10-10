@@ -238,11 +238,11 @@
   .b-head { margin-top: 14px; }
   .b-head .addr { color: var(--ink-muted); margin-top: 6px; font-size: 0.94rem; }
   .b-head h2 { font-size: 1.7rem; }
-  .b-head.has-map { display: flex; gap: 12px; align-items: stretch; }
-  .b-head.has-map .b-head-txt { flex: 1 1 0; min-width: 0; }
-  .b-head-map { flex: 0 0 38%; max-width: 280px; height: 170px !important; align-self: flex-start; margin: 0; }
-  .b-head.has-map .walk-tag { white-space: normal; }
-  @media (max-width: 520px) { .b-head-map { flex-basis: 36%; height: 150px !important; } .b-head.has-map h2 { font-size: 1.4rem; } }
+  .b-walkrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 4px; }
+  .b-walkrow .walk-tag { margin: 0; font-size: 0.86rem; }
+  .b-loc-btn { display: inline-block; flex: none; font: inherit; font-size: 1.1rem; font-weight: 700; line-height: 1.2; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--accent, #6b4fd1); cursor: pointer; }
+  .b-loc-btn:hover { background: var(--surface-2); }
+  @media (max-width: 520px) { .b-loc-btn { font-size: 0.95rem; } }
   .stat-row {
     margin-top: 20px;
     display: grid;
@@ -2553,6 +2553,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   // ---------------- HOME ----------------
   var homeCache = [];
   var homeView = "list"; // "list" | "map"
+  var pendingMapFocus = null; // 건물 상세의 '위치 보기' → 홈 지도에서 이 건물로 이동
   var HOME_GROUPS = [
     { k: "type", label: "유형", big: "유형별로", sub: "원룸 · 투룸 · 오피스텔 · 빌라, 건물 유형마다 한눈에." },
     { k: "road", label: "도로", big: "골목별로", sub: "광운로 · 석계로 · 월계로, 같은 길에 있는 건물끼리." },
@@ -3044,6 +3045,16 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       ensureHomeMap().then(function (m) {
         if (!m) return;
         m.relayout();
+        if (pendingMapFocus) {
+          var fb = rows.filter(function (b) { return b.id === pendingMapFocus; })[0];
+          var fll = fb && buildingLatLng(fb);
+          pendingMapFocus = null;
+          if (fll) {
+            mapSelection = [fb.id]; mapUserMoved = true; mapFitted = true;
+            m.setView(fll, 17);
+            if (window.innerWidth <= 900) heroEl.scrollIntoView({ block: "start" });
+          }
+        }
         if (!mapUserMoved && !mapSelection) m.fitWolgye();
         fitIfNeeded();
         drawMarkers();
@@ -3328,13 +3339,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       var unlocked = hasContributed() || byCredit;
       body.innerHTML =
         '<div id="b-hero-slot"></div>' +
-        '<div class="b-head' + (buildingLatLng(buildingData) ? " has-map" : "") + '">' +
-          '<div class="b-head-txt">' +
+        '<div class="b-head">' +
           '<span class="tag">' + esc(buildingData.buildingType || "기타") + "</span>" +
-          "<h2>" + esc(buildingData.name) + walkTagHtml(buildingData, false) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
+          "<h2>" + esc(buildingData.name) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
+          '<div class="b-walkrow">' + walkTagHtml(buildingData, true) + (buildingLatLng(buildingData) ? '<button type="button" class="b-loc-btn" id="b-loc-btn">📍 위치 보기</button>' : "") + "</div>" +
           bldSummaryHtml(buildingData) +
-          "</div>" +
-          (buildingLatLng(buildingData) ? '<div id="detail-map" class="map-box b-head-map"></div>' : "") +
         "</div>" +
         rtCardHtml(buildingData) +
         ((unlocked || adminMode)
@@ -3393,7 +3402,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       mountHero();
       var locOpen = document.getElementById("loc-set-open");
       if (locOpen) locOpen.addEventListener("click", openLocSetter);
-      drawDetailMap();
+      var locBtn = document.getElementById("b-loc-btn");
+      if (locBtn) locBtn.addEventListener("click", function () {
+        pendingMapFocus = buildingData._id;
+        homeView = "map";
+        location.hash = "#/";
+      });
       queueGeocode(buildingData);
     }
 
