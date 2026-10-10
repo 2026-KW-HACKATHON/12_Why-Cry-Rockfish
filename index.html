@@ -513,6 +513,8 @@
   }
   .lock-overlay span { font-size: 0.8rem; font-weight: 600; color: var(--ink-muted); }
   .lock-overlay .btn { padding: 7px 14px; font-size: 0.8rem; }
+  .lock-overlay .lock-btns { justify-content: center; width: auto; }
+  .locked-wrap { min-height: 150px; }
   .unlocked-badge {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 0.74rem; font-weight: 600;
@@ -2339,24 +2341,28 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     useCredit(t.getAttribute("data-use-credit"));
   });
   // 잠긴 건물 안내: 로그인 전 / 크레딧 남음 / 크레딧 소진에 따라 다르게
-  function creditLockHtml(bid, title) {
-    var go = '<a class="btn" href="#/submit/' + encodeURIComponent(bid) + '">제보하고 전체 열기</a>';
-    var body, btn;
+  // 잠금 해제 선택지: [크레딧/로그인] [제보하고 열기] — 후기 카드의 잠금 화면 안에 나란히 둠
+  function lockBtnsHtml(bid) {
+    var go = '<a class="btn" href="#/submit/' + encodeURIComponent(bid) + '">제보하고 잠금 해제</a>';
+    var btn = "";
+    if (!currentUser) btn = '<button type="button" class="btn primary" data-login-credit>로그인하고 무료로 열기</button>';
+    else if (creditState && creditsLeft() > 0) btn = '<button type="button" class="btn primary" data-use-credit="' + esc(bid) + '">🎟 크레딧으로 열기</button>';
+    return '<div class="lock-btns">' + btn + go + "</div>";
+  }
+  // 위쪽 '한눈에 보기' 잠금 안내: 설명만 (버튼은 아래 제보 목록의 잠금 화면에 있음). 제보가 아직 없는 건물만 여기에 버튼을 둠.
+  function creditLockHtml(bid, title, withActions) {
+    var body;
     if (!currentUser) {
       body = "<b>" + title + "</b><br>로그인하면 <b>무료 열람 크레딧 " + FREE_CREDITS + "개</b>로 건물 " + FREE_CREDITS + "곳을 먼저 볼 수 있어요. 제보 1건이면 모든 건물이 열려요.";
-      btn = '<button type="button" class="btn primary" data-login-credit>로그인하고 무료로 보기</button>';
     } else if (!creditState) {
       body = "<b>" + title + "</b><br>무료 열람 크레딧을 확인하는 중이에요…";
-      btn = "";
     } else if (creditsLeft() > 0) {
       body = "<b>" + title + "</b><br>아직 제보 전이라 <b>무료 열람 크레딧</b>을 쓸 수 있어요. 남은 크레딧 <b class=\"cr-n\">" + creditsLeft() + "개</b> · 제보 1건이면 모든 건물이 무제한으로 열려요.";
-      btn = '<button type="button" class="btn primary" data-use-credit="' + esc(bid) + '">🎟 크레딧 1개로 이 건물 보기</button>';
     } else {
       body = "<b>무료 열람 크레딧을 모두 사용했어요.</b><br>제보 1건만 남기면 이 건물뿐 아니라 모든 건물의 상세 정보를 볼 수 있어요.";
-      btn = "";
     }
-    return '<div class="lock-banner ov-lock"><div class="lock-banner-icon">' + (currentUser && creditsLeft() > 0 ? "🎟" : "🔒") + '</div>' +
-      '<div class="lock-banner-text">' + body + '</div><div class="lock-btns">' + btn + go + "</div></div>";
+    return '<div class="lock-banner ov-lock"><div class="lock-banner-icon">' + (currentUser && creditState && creditsLeft() > 0 ? "🎟" : "🔒") + '</div>' +
+      '<div class="lock-banner-text">' + body + (withActions ? "" : "<br><span style=\"color:var(--ink-muted)\">열기 버튼은 아래 제보 목록에 있어요.</span>") + "</div>" + (withActions ? lockBtnsHtml(bid) : "") + "</div>";
   }
   document.addEventListener("click", function (ev) {
     var t = ev.target && ev.target.closest && ev.target.closest("[data-login-credit]");
@@ -2443,10 +2449,43 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   }
 
   // ---------------- ROUTER ----------------
+  // 새로고침·앱 재실행 때 홈이 아니라 보던 화면(과 스크롤 위치)을 그대로 이어서 보여주기
+  var LAST_KEY = "jipsok_last", SCROLL_KEY = "jipsok_scroll", pendingScroll = null;
+  function isHomeHash(h) { return !h || h === "#" || h === "#/"; }
+  function inStandalone() {
+    try { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone; } catch (e) { return false; }
+  }
+  (function restoreLastScreen() {
+    try {
+      var nav = (performance.getEntriesByType && performance.getEntriesByType("navigation")[0]) || {};
+      var isReload = nav.type === "reload";
+      if (!isReload && !(inStandalone() && isHomeHash(location.hash))) return;
+      if (isHomeHash(location.hash)) {
+        var last = JSON.parse(localStorage.getItem(LAST_KEY) || "null");
+        if (last && last.h && Date.now() - last.t < 6 * 3600 * 1000) history.replaceState(null, "", location.pathname + location.search + last.h);
+      }
+      var sc = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || localStorage.getItem(SCROLL_KEY) || "null");
+      if (sc && sc.h === location.hash && sc.y > 0) pendingScroll = { y: sc.y };
+    } catch (e) {}
+  })();
+  function saveScroll() {
+    try {
+      if (isHomeHash(location.hash)) { localStorage.removeItem(SCROLL_KEY); return; }
+      var v = JSON.stringify({ h: location.hash, y: Math.round(window.scrollY || 0) });
+      sessionStorage.setItem(SCROLL_KEY, v); localStorage.setItem(SCROLL_KEY, v);
+    } catch (e) {}
+  }
+  window.addEventListener("pagehide", saveScroll);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") saveScroll(); });
+  ["wheel", "touchmove", "keydown"].forEach(function (n) { window.addEventListener(n, function () { pendingScroll = null; }, { passive: true }); });
   function router() {
     cleanup();
     var hash = location.hash.replace(/^#\/?/, "");
     var parts = hash.split("/").filter(Boolean);
+    try {
+      if (isHomeHash(location.hash)) localStorage.removeItem(LAST_KEY);
+      else localStorage.setItem(LAST_KEY, JSON.stringify({ h: location.hash, t: Date.now() }));
+    } catch (e) {}
     document.body.classList.toggle("form-page", parts[0] === "submit" || parts[0] === "edit" || parts[0] === "board");
     window.scrollTo(0, 0);
     if (parts[0] === "building" && parts[1]) renderDetail(decodeURIComponent(parts[1]));
@@ -2461,6 +2500,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     else if (parts[0] === "profile") renderProfile();
     else if (parts[0] === "admin") renderAdmin();
     else renderHome();
+    if (pendingScroll) {
+      var py = pendingScroll.y;
+      [150, 500, 1000, 1800, 2800].forEach(function (ms) { setTimeout(function () { if (pendingScroll) window.scrollTo(0, py); }, ms); });
+      setTimeout(function () { pendingScroll = null; }, 3000);
+    }
   }
   window.addEventListener("hashchange", router);
   // 스크롤하면 카드들이 아래에서 살며시 떠오르는 효과
@@ -2495,6 +2539,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     var brand = document.querySelector("a.brand");
     if (brand) brand.addEventListener("click", function (ev) {
       ev.preventDefault();
+      try { localStorage.removeItem(LAST_KEY); localStorage.removeItem(SCROLL_KEY); sessionStorage.removeItem(SCROLL_KEY); } catch (e) {}
       try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; }
       location.reload();
     });
@@ -3305,7 +3350,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
                 return '<span class="chip ' + t.cls + '">' + esc(t.label) + "</span>";
               }).join("") + "</div>" : "") +
             "</section>"
-          : creditLockHtml(buildingData._id, "이 건물 한눈에 보기는 잠겨 있어요.")) +
+          : creditLockHtml(buildingData._id, "이 건물 한눈에 보기는 잠겨 있어요.", !listRows.length)) +
 
         (adminMode ? adminBuildingBar() : "") +
         (buildingLatLng(buildingData)
@@ -3509,7 +3554,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
 
     function lockBanner(buildingId) {
       // 위쪽 '한눈에 보기' 잠금 안내에 버튼이 이미 있으므로 여기서는 짧게만
-      return '<div class="credit-note">🔒 아래 제보의 자세한 내용도 같이 잠겨 있어요. 위에서 ' + (currentUser && creditsLeft() > 0 ? "크레딧을 쓰거나 " : "") + '<a href="#/submit/' + encodeURIComponent(buildingId) + '">제보하면</a> 열려요.</div>';
+      return '<div class="credit-note">🔒 제보의 자세한 내용은 잠겨 있어요. 각 제보의 잠금 화면에서 ' + (currentUser && creditsLeft() > 0 ? "크레딧으로 열거나 " : "") + '제보하고 열 수 있어요.</div>';
     }
 
     function reportCard(r, unlocked) {
@@ -3560,7 +3605,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
               '<div class="locked-blur" aria-hidden="true">' + detailInner + "</div>" +
               '<div class="lock-overlay">' +
                 "<span>🔒 난방비 · 채광 · 소음 등 상세 정보</span>" +
-                '<a class="btn primary" href="#/submit/' + encodeURIComponent(buildingData._id) + '">제보하고 잠금 해제</a>' +
+                lockBtnsHtml(buildingData._id) +
               "</div>" +
             "</div>"
           );
