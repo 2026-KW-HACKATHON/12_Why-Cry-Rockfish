@@ -3984,7 +3984,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           '<div class="field"><label class="main">지금 이 집에 사시나요?</label><select id="residencyStatus">' + options(RESIDENCY_STATUS, "선택 안 함") + "</select></div>" +
           '<p style="margin:8px 0 0;font-size:0.8rem;color:var(--ink-muted)">아직 거주 중인 제보는 다음 세입자를 구하려는 목적이 섞여 있을 수 있어요. 이미 퇴거하신 분의 제보라면 밝혀주시면 다른 사람이 더 믿을 수 있어요.</p>' +
           ('<div class="field">' +
-            '<label class="main">임대차계약서 사진 (선택, 검토 후 인증 배지가 붙어요)</label>' +
+            '<label class="main">임대차계약서 사진 (필수 · 검토 후 인증 배지가 붙어요)</label>' +
             '<input type="file" id="contractFile" accept="image/*">' +
             '<p class="hint">이름·연락처·계좌·주민번호는 반드시 가리고, 주소·호수·계약기간만 보이게 찍어주세요. 관리자가 직접 검토해서 "계약서 인증 완료" 표시를 붙여드려요 (보통 1~2일 내). 사진은 관리자에게만 보이고, <b>인증 검토가 끝나면 즉시 삭제되며 인증 여부만 저장돼요.</b> 인증되면 게시판 글에 <b>"OO빌라 거주중"</b> 배지가 붙어요.</p>' +
           "</div>") +
@@ -4425,6 +4425,12 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
       if (!currentUser) { toast("로그인이 필요해요."); btn.disabled = false; btn.textContent = editCtx ? "수정 완료" : "제보 등록하기"; return; }
 
       var contractFile = ((document.getElementById("contractFile") || {}).files || [])[0] || null;
+      if (!contractFile && !editCtx) {
+        toast("임대차계약서 사진을 첨부해주세요. (필수)");
+        btn.disabled = false; btn.textContent = "제보 등록하기";
+        var cf = document.getElementById("contractFile"); if (cf && cf.scrollIntoView) cf.scrollIntoView({ block: "center" });
+        return;
+      }
       var photoFiles = Array.prototype.slice.call((document.getElementById("photoFile") || {}).files || [], 0, 2);
       // Storage 없이: 사진을 작게 줄여(긴 변 960px, 약 140KB 이하 JPEG) 제보 문서에 data URL로 함께 저장한다.
       function shrink(file) {
@@ -5706,7 +5712,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     document.getElementById("auth-submit").textContent = isSignup ? "회원가입" : "로그인";
     document.getElementById("auth-toggle-mode").innerHTML = (isSignup ? "로그인" : "회원가입") + ' <span aria-hidden="true">›</span>';
     document.getElementById("auth-forgot").style.display = isSignup ? "none" : "";
-    document.getElementById("auth-password").placeholder = isSignup ? "비밀번호 (6자 이상)" : "비밀번호";
+    document.getElementById("auth-password").placeholder = isSignup ? "비밀번호 (8자 이상, 특수문자 포함)" : "비밀번호";
     document.getElementById("auth-password").setAttribute("autocomplete", isSignup ? "new-password" : "current-password");
     syncAuthSubmit();
   }
@@ -5742,7 +5748,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     switch (e && e.code) {
       case "auth/invalid-email": return "이메일 형식이 올바르지 않아요.";
       case "auth/email-already-in-use": return "이미 가입된 이메일이에요. 로그인해주세요.";
-      case "auth/weak-password": return "비밀번호는 6자 이상이어야 해요.";
+      case "auth/weak-password": return "비밀번호는 8자 이상이고 특수문자를 포함해야 해요.";
       case "auth/user-not-found":
       case "auth/wrong-password":
       case "auth/invalid-credential": return "이메일 또는 비밀번호가 올바르지 않아요.";
@@ -5770,6 +5776,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
     document.getElementById("auth-error").style.display = "none";
     if (!email || !pw) { authErr("이메일과 비밀번호를 입력해주세요."); return; }
     if (authMode === "signup" && !name) { authErr("이름을 입력해주세요."); return; }
+    if (authMode === "signup" && (pw.length < 8 || !/[^A-Za-z0-9가-힣\s]/.test(pw))) { authErr("비밀번호는 8자 이상이고 특수문자(!@#$% 등)를 포함해야 해요."); return; }
     var btn = document.getElementById("auth-submit");
     btn.disabled = true;
     var task = authMode === "signup"
