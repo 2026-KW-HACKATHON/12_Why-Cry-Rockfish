@@ -238,11 +238,11 @@
   .b-head { margin-top: 14px; }
   .b-head .addr { color: var(--ink-muted); margin-top: 6px; font-size: 0.94rem; }
   .b-head h2 { font-size: 1.7rem; }
-  .b-walkrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 4px; }
+  .b-walkrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-top: 4px; }
   .b-walkrow .walk-tag { margin: 0; font-size: 0.86rem; }
-  .b-loc-btn { display: inline-block; flex: none; font: inherit; font-size: 1.1rem; font-weight: 700; line-height: 1.2; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--accent, #6b4fd1); cursor: pointer; }
+  .b-loc-btn { display: inline-block; flex: none; font: inherit; font-size: 1.25rem; font-weight: 700; line-height: 1.2; padding: 6px 16px; margin-left: auto; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--accent, #6b4fd1); cursor: pointer; }
   .b-loc-btn:hover { background: var(--surface-2); }
-  @media (max-width: 520px) { .b-loc-btn { font-size: 0.95rem; } }
+  @media (max-width: 520px) { .b-loc-btn { font-size: 1.05rem; padding: 5px 13px; } }
   .stat-row {
     margin-top: 20px;
     display: grid;
@@ -1022,6 +1022,10 @@
   .pk-dot.has { background: #7c5cc4; }
   .pk-dot.sel { width: 20px; height: 20px; background: #e2721b; }
   .pk-label { position: absolute; left: 0; top: -16px; transform: translate(-50%, -100%); white-space: nowrap; background: #5f43a6; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+  .mk-focus { position: relative; width: 0; height: 0; }
+  .mk-focus i { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%; background: #e5252a; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.45); }
+  .mk-focus b { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #e5252a; opacity: 0; animation: mkpulse 1.5s ease-out infinite; }
+  @keyframes mkpulse { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(3); opacity: 0; } }
   .mk-dot { width: 18px; height: 18px; border-radius: 50%; background: #7c5cc4; border: 3px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.35); transform: translate(-50%, -50%); }
 
   /* ---- 허위매물 신고: 매물 선택 ---- */
@@ -2553,6 +2557,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
   // ---------------- HOME ----------------
   var homeCache = [];
   var homeView = "list"; // "list" | "map"
+  var focusMarkId = null; // 위치 보기로 찍은 빨간 점
   var pendingMapFocus = null; // 건물 상세의 '위치 보기' → 홈 지도에서 이 건물로 이동
   var HOME_GROUPS = [
     { k: "type", label: "유형", big: "유형별로", sub: "원룸 · 투룸 · 오피스텔 · 빌라, 건물 유형마다 한눈에." },
@@ -2981,6 +2986,11 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           }));
         }
       });
+      if (focusMarkId && mapSelection && mapSelection.length === 1 && mapSelection[0] === focusMarkId) {
+        var fbld = mapRows.filter(function (b) { return b.id === focusMarkId; })[0];
+        var fl = fbld && buildingLatLng(fbld);
+        if (fl) homeMarks.push(homeMap.addHtml(fl, '<div class="mk-focus"><i></i><b></b></div>', { z: 30, title: "여기예요" }));
+      } else { focusMarkId = null; }
       var hint = document.getElementById("map-hint");
       var noPos = noPosAll;
       if (hint) {
@@ -3050,6 +3060,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
           var fll = fb && buildingLatLng(fb);
           pendingMapFocus = null;
           if (fll) {
+            focusMarkId = fb.id;
             mapSelection = [fb.id]; mapUserMoved = true; mapFitted = true;
             m.setView(fll, 17);
             if (window.innerWidth <= 900) heroEl.scrollIntoView({ block: "start" });
@@ -3342,7 +3353,7 @@ window.__WOLGYE_ADMIN_EMAILS__ = ["seokwon0224@gmail.com", "kms04010269@gmail.co
         '<div class="b-head">' +
           '<span class="tag">' + esc(buildingData.buildingType || "기타") + "</span>" +
           "<h2>" + esc(buildingData.name) + (adminMode ? '<button type="button" class="b-name-edit" data-edit-name="' + esc(buildingData._id) + '">✏️ 이름 수정</button>' : "") + "</h2>" +
-          '<div class="b-walkrow">' + walkTagHtml(buildingData, true) + (buildingLatLng(buildingData) ? '<button type="button" class="b-loc-btn" id="b-loc-btn">📍 위치 보기</button>' : "") + "</div>" +
+          '<div class="b-walkrow">' + walkTagHtml(buildingData, true) + (buildingLatLng(buildingData) ? '<button type="button" class="b-loc-btn" id="b-loc-btn">🌏 위치 보기</button>' : "") + "</div>" +
           bldSummaryHtml(buildingData) +
         "</div>" +
         rtCardHtml(buildingData) +
